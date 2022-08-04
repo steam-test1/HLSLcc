@@ -20,9 +20,11 @@ int main()
     GLSLShader shader;
 
     // NOTE: Since we are using LANG_HLSL, a newly added variant, the output might look a bit strange.
-    // HLSLcc uses the language enum to determine which feature set is supported by the target (various versions of glsl)
-    // Since we use none of those, we hit the default case in a bunch of switch statements, and get some sort of ugly output.
-    // It basically thinks we are using ancient glsl.
+    //   HLSLcc uses the language enum to determine which feature set is supported by the target (various versions of glsl)
+    //   Since we use none of those, we hit the default case in a bunch of switch statements, and get some sort of ugly output.
+    //   It basically thinks we are using ancient glsl.
+    // NOTE: Just extracting DXBC isn't enough. We need to fix up RDEF sections of the binary. I re-purposed uTinyRipper for this.
+    //   You can use the script found here: https://github.com/pema99/jank-extract-assetbundle-for-hlslcc/blob/main/FixShader/Program.cs
     int ok = TranslateHLSLFromFile("test/a.dxbc", 0, LANG_HLSL, &ext, nullptr, info, reflection, &shader);
 
     if (ok)
