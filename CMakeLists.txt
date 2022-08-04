@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 2.8)
 
 project(HLSLcc)
 
-option(HLSLCC_LIBRARY_SHARED "Build shared library instead of static." OFF)
+option(HLSLCC_LIBRARY_SHARED "Build shared library instead of static." ON)
 
 file(GLOB HLSLCC_HDRS "${CMAKE_CURRENT_SOURCE_DIR}/include/*")
 set(HLSLCC_SRC
