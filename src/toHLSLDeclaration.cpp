@@ -2498,26 +2498,27 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 }
                 else
                 {
+                    // TODO(pema): These should prolly be static
                     if (psShader->psFloatTempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT, psShader->psFloatTempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT, psShader->psFloatTempSizes[i], usePrecision), i);
                     if (psShader->psFloat16TempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT16, psShader->psFloat16TempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT16, psShader->psFloat16TempSizes[i], usePrecision), i);
                     if (psShader->psFloat10TempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "10_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT10, psShader->psFloat10TempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "10_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT10, psShader->psFloat10TempSizes[i], usePrecision), i);
                     if (psShader->psIntTempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "i%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT, psShader->psIntTempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "i%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT, psShader->psIntTempSizes[i], usePrecision), i);
                     if (psShader->psInt16TempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "i16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT16, psShader->psInt16TempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "i16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT16, psShader->psInt16TempSizes[i], usePrecision), i);
                     if (psShader->psInt12TempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "i12_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT12, psShader->psInt12TempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "i12_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_INT12, psShader->psInt12TempSizes[i], usePrecision), i);
                     if (psShader->psUIntTempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "u%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_UINT, psShader->psUIntTempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "u%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_UINT, psShader->psUIntTempSizes[i], usePrecision), i);
                     if (psShader->psUInt16TempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "u16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_UINT16, psShader->psUInt16TempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "u16_%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_UINT16, psShader->psUInt16TempSizes[i], usePrecision), i);
                     if (psShader->fp64 && (psShader->psDoubleTempSizes[i] != 0))
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "d%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_DOUBLE, psShader->psDoubleTempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "d%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_DOUBLE, psShader->psDoubleTempSizes[i], usePrecision), i);
                     if (psShader->psBoolTempSizes[i] != 0)
-                        bformata(glsl, "%s " HLSLCC_TEMP_PREFIX "b%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_BOOL, psShader->psBoolTempSizes[i], usePrecision), i);
+                        bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "b%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_BOOL, psShader->psBoolTempSizes[i], usePrecision), i);
                 }
             }
             break;

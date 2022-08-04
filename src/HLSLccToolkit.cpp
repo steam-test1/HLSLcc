@@ -601,7 +601,7 @@ namespace HLSLcc
         bstring *str = &psContext->psShader->asPhases[psContext->currentPhase].earlyMain;
         int indent = psContext->indent;
 
-        if (psContext->psShader->eTargetLanguage == LANG_METAL && !psContext->indent)
+        if ((psContext->psShader->eTargetLanguage == LANG_METAL || psContext->psShader->eTargetLanguage == LANG_HLSL) && !psContext->indent)
             ++psContext->indent;
 
         psContext->currentGLSLString = str;
@@ -618,7 +618,7 @@ namespace HLSLcc
         bstring *str = &psContext->psShader->asPhases[psContext->currentPhase].postShaderCode;
         int indent = psContext->indent;
 
-        if (psContext->psShader->eTargetLanguage == LANG_METAL && !psContext->indent)
+        if ((psContext->psShader->eTargetLanguage == LANG_METAL || psContext->psShader->eTargetLanguage == LANG_HLSL) && !psContext->indent)
             ++psContext->indent;
 
         psContext->psShader->asPhases[psContext->currentPhase].hasPostShaderCode = 1;
