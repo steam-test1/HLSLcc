@@ -133,10 +133,52 @@ namespace HLSLcc
         }
     }
 
+    const char* GetConstructorForTypeHLSL(const SHADER_VARIABLE_TYPE eType, const int components)
+    {
+        static const char* const uintTypes[] = { " ", "uint", "uint2", "uint3", "uint4" };
+        static const char* const uint16Types[] = { " ", "min16uint", "min16uint2", "min16uint3", "min16uint4" };
+        static const char* const intTypes[] = { " ", "int", "int2", "int3", "int4" };
+        static const char* const int16Types[] = { " ", "min16int", "min16int2", "min16int3", "min16int4" };
+        static const char* const int12Types[] = { " ", "min12int", "min12int2", "min12int3", "min12int4" };
+        static const char* const floatTypes[] = { " ", "float", "float2", "float3", "float4" };
+        static const char* const float16Types[] = { " ", "half", "half2", "half3", "half4" };
+        static const char* const float10Types[] = { " ", "min10float", "min10float2", "min10float3", "min10float4" };
+        static const char* const boolTypes[] = { " ", "bool", "bool2", "bool3", "bool4" };
+
+        ASSERT(components >= 1 && components <= 4);
+
+        switch (eType)
+        {
+        case SVT_UINT:
+            return uintTypes[components];
+        case SVT_UINT16:
+            return uint16Types[components];
+        case SVT_INT:
+            return intTypes[components];
+        case SVT_INT16:
+            return int16Types[components];
+        case SVT_INT12:
+            return int12Types[components];
+        case SVT_FLOAT:
+            return floatTypes[components];
+        case SVT_FLOAT16:
+            return float16Types[components];
+        case SVT_FLOAT10:
+            return float10Types[components];
+        case SVT_BOOL:
+            return boolTypes[components];
+        default:
+            ASSERT(0);
+            return " ";
+        }
+    }
+
     const char * GetConstructorForType(const HLSLCrossCompilerContext *psContext, const SHADER_VARIABLE_TYPE eType, const int components, bool useGLSLPrecision /* = true*/)
     {
         if (psContext->psShader->eTargetLanguage == LANG_METAL)
             return GetConstructorForTypeMetal(eType, components);
+        else if (psContext->psShader->eTargetLanguage == LANG_HLSL)
+            return GetConstructorForTypeHLSL(eType, components);
         else
             return GetConstructorForTypeGLSL(psContext, eType, components, useGLSLPrecision);
     }
@@ -146,6 +188,22 @@ namespace HLSLcc
         std::string result;
         std::ostringstream oss;
         if (psContext->psShader->eTargetLanguage == LANG_METAL)
+        {
+            switch (eBaseType)
+            {
+                case SVT_FLOAT:
+                    oss << "float" << columns << "x" << rows;
+                    break;
+                case SVT_FLOAT16:
+                case SVT_FLOAT10:
+                    oss << "half" << columns << "x" << rows;
+                    break;
+                default:
+                    ASSERT(0);
+                    break;
+            }
+        }
+        else if (psContext->psShader->eTargetLanguage == LANG_HLSL)
         {
             switch (eBaseType)
             {
@@ -493,6 +551,7 @@ namespace HLSLcc
             (dest == SVT_FLOAT || dest == SVT_DOUBLE || dest == SVT_FLOAT16 || dest == SVT_FLOAT10))
             return true;
 
+        // TODO(pema): Needed for HLSL?
         if (context->psShader->eTargetLanguage == LANG_METAL)
         {
             // avoid compiler error: cannot use as_type to cast from 'half' to 'unsigned int' or 'int', types of different size

@@ -335,6 +335,18 @@ static std::string GetBitcastOp(HLSLCrossCompilerContext *psContext, SHADER_VARI
         oss << ">";
         return oss.str();
     }
+    else if (psContext->psShader->eTargetLanguage == LANG_HLSL)
+    {
+        needsBitcastOp = true; // TODO(pema): Wtf is this flag?
+        if ((to == SVT_FLOAT || to == SVT_FLOAT16 || to == SVT_FLOAT10) && from == SVT_INT)
+            return "asfloat";
+        else if ((to == SVT_FLOAT || to == SVT_FLOAT16 || to == SVT_FLOAT10) && from == SVT_UINT)
+            return "asfloat";
+        else if (to == SVT_INT && (from == SVT_FLOAT || from == SVT_FLOAT16 || from == SVT_FLOAT10))
+            return "asint";
+        else if (to == SVT_UINT && (from == SVT_FLOAT || from == SVT_FLOAT16 || from == SVT_FLOAT10))
+            return "asuint";
+    }
     else
     {
         needsBitcastOp = true;
@@ -362,6 +374,8 @@ static void printImmediate32(HLSLCrossCompilerContext *psContext, bstring glsl, 
     {
         if (psContext->psShader->eTargetLanguage == LANG_METAL)
             bcatcstr(glsl, "as_type<float>(");
+        else if (psContext->psShader->eTargetLanguage == LANG_HLSL)
+            bcatcstr(glsl, "asfloat(");
         else
             bcatcstr(glsl, "intBitsToFloat(");
         eType = SVT_INT;

@@ -292,6 +292,7 @@ bool HLSLCrossCompilerContext::OutputNeedsDeclaring(const Operand* psOperand, co
             return true;
         }
 
+        // TODO(pema): HLSL behavior here?
         if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH)
         {
             // GL doesn't need declaration, Metal does.
@@ -329,6 +330,7 @@ bool HLSLCrossCompilerContext::OutputNeedsDeclaring(const Operand* psOperand, co
 
         if (psSignature && (psSignature->semanticName == "PSIZE") && (psShader->eTargetLanguage != LANG_METAL))
         {
+            // TODO(pema): HLSL behavior here?
             // gl_PointSize, doesn't need declaring. TODO: Metal doesn't have pointsize at all?
             return false;
         }

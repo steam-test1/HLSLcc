@@ -402,6 +402,7 @@ SHADER_VARIABLE_TYPE Operand::GetDataType(HLSLCrossCompilerContext* psContext, S
                 case NAME_RENDER_TARGET_ARRAY_INDEX:
                 case NAME_VIEWPORT_ARRAY_INDEX:
                 case NAME_SAMPLE_INDEX:
+                    // TODO(pema): HLSL behavior here?
                     return (psContext->psShader->eTargetLanguage == LANG_METAL) ? SVT_UINT : SVT_INT;
 
                 case NAME_IS_FRONT_FACE:
@@ -427,6 +428,7 @@ SHADER_VARIABLE_TYPE Operand::GetDataType(HLSLCrossCompilerContext* psContext, S
                 psIn->eSystemValueType == NAME_RENDER_TARGET_ARRAY_INDEX ||
                 psIn->eSystemValueType == NAME_VIEWPORT_ARRAY_INDEX ||
                 psIn->eSystemValueType == NAME_SAMPLE_INDEX)
+                // TODO(pema): HLSL behavior here?
                 return (psContext->psShader->eTargetLanguage == LANG_METAL) ? SVT_UINT : SVT_INT;
 
             if (psIn->eMinPrec != MIN_PRECISION_DEFAULT)
