@@ -18,11 +18,16 @@ int main()
     HLSLccSamplerPrecisionInfo info;
     HLSLccReflection reflection;
     GLSLShader shader;
-    int ok = TranslateHLSLFromFile("test/a.dxbc", 0, LANG_DEFAULT, &ext, nullptr, info, reflection, &shader);
+
+    // NOTE: Since we are using LANG_HLSL, a newly added variant, the output might look a bit strange.
+    // HLSLcc uses the language enum to determine which feature set is supported by the target (various versions of glsl)
+    // Since we use none of those, we hit the default case in a bunch of switch statements, and get some sort of ugly output.
+    // It basically thinks we are using ancient glsl.
+    int ok = TranslateHLSLFromFile("test/a.dxbc", 0, LANG_HLSL, &ext, nullptr, info, reflection, &shader);
 
     if (ok)
     {
-        std::ofstream out("test/out.hlsl");
+        std::ofstream out("test/out1.hlsl");
         out << shader.sourceCode;
         out.close();
     }
