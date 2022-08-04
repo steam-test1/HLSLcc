@@ -38,6 +38,7 @@ typedef enum
     LANG_430,
     LANG_440, LANG_GL_LAST = LANG_440,
     LANG_METAL,
+    LANG_HLSL, // TODO(pema): All the LANG_<number> variants are used to determine the feature set of GLSL. Some of these should probably be fixed up with HLSL equivalent.
 } GLLang;
 
 typedef struct GlExtensions
