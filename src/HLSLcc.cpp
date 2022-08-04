@@ -4,6 +4,7 @@
 #include <sstream>
 #include "internal_includes/HLSLCrossCompilerContext.h"
 #include "internal_includes/toGLSL.h"
+#include "internal_includes/toHLSL.h"
 #include "internal_includes/toMetal.h"
 #include "internal_includes/Shader.h"
 #include "internal_includes/decode.h"
@@ -117,6 +118,23 @@ HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromMem(const char* shader,
                 return 0;
             }
             ToMetal translator(&sContext);
+            if (!translator.Translate())
+            {
+                bdestroy(sContext.glsl);
+                for (i = 0; i < psShader->asPhases.size(); ++i)
+                {
+                    bdestroy(psShader->asPhases[i].postShaderCode);
+                    bdestroy(psShader->asPhases[i].earlyMain);
+                }
+
+                return 0;
+            }
+        }
+        else if (language == LANG_HLSL)
+        {
+            ToHLSL translator(&sContext);
+            language = translator.SetLanguage(language);
+            translator.SetExtensions(extensions);
             if (!translator.Translate())
             {
                 bdestroy(sContext.glsl);
