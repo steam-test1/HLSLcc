@@ -25,6 +25,10 @@ set(HLSLCC_SRC
 		src/toGLSLDeclaration.cpp
 		src/toGLSLInstruction.cpp
 		src/toGLSLOperand.cpp
+		src/toHLSL.cpp
+		src/toHLSLDeclaration.cpp
+		src/toHLSLInstruction.cpp
+		src/toHLSLOperand.cpp
 		src/toMetal.cpp
 		src/toMetalDeclaration.cpp
 		src/toMetalInstruction.cpp
