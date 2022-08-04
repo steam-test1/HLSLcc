@@ -262,20 +262,20 @@ static void DeclareInput(
 
     if ((ui32CompMask & ~psShader->acInputDeclared[regSpace][ui32Reg]) != 0)
     {
-        const char* vecType = "vec";
+        const char* vecType = "float";
         const char* scalarType = "float";
 
         switch (psSig->eComponentType)
         {
             case INOUT_COMPONENT_UINT32:
             {
-                vecType = "uvec";
+                vecType = "uint";
                 scalarType = "uint";
                 break;
             }
             case INOUT_COMPONENT_SINT32:
             {
-                vecType = "ivec";
+                vecType = "int";
                 scalarType = "int";
                 break;
             }
@@ -486,7 +486,7 @@ void ToHLSL::AddBuiltinOutput(const Declaration* psDecl, int arrayElements, cons
             bformata(psContext->glsl, "// HLSLcc_%sDistances_%x\n", glName, clipmask);
 
             psContext->psShader->asPhases[psContext->currentPhase].acOutputNeedsRedirect[psSignature->ui32Register] = 0xff;
-            bformata(psContext->glsl, "vec4 phase%d_gl%sDistance%d;\n", psContext->currentPhase, glName, index);
+            bformata(psContext->glsl, "float4 phase%d_gl%sDistance%d;\n", psContext->currentPhase, glName, index);
 
             for (int i = 0; i < max; ++i)
             {
@@ -529,7 +529,7 @@ void ToHLSL::HandleOutputRedirect(const Declaration *psDecl, const char *Precisi
         ASSERT(psContext->psShader->aIndexedOutput[regSpace][psOperand->ui32RegisterNumber] == 0);
 
         psContext->AddIndentation();
-        bformata(glsl, "%s vec4 phase%d_Output%d_%d;\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
+        bformata(glsl, "%s float4 phase%d_Output%d_%d;\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
 
         while (comp < 4)
         {
@@ -628,7 +628,7 @@ void ToHLSL::AddUserOutput(const Declaration* psDecl)
             case INOUT_COMPONENT_UINT32:
             {
                 if (iNumComponents > 1)
-                    type = bformat("uvec%d", iNumComponents);
+                    type = bformat("uint%d", iNumComponents);
                 else
                     type = bformat("uint");
                 break;
@@ -636,7 +636,7 @@ void ToHLSL::AddUserOutput(const Declaration* psDecl)
             case INOUT_COMPONENT_SINT32:
             {
                 if (iNumComponents > 1)
-                    type = bformat("ivec%d", iNumComponents);
+                    type = bformat("int%d", iNumComponents);
                 else
                     type = bformat("int");
                 break;
@@ -644,7 +644,7 @@ void ToHLSL::AddUserOutput(const Declaration* psDecl)
             case INOUT_COMPONENT_FLOAT32:
             {
                 if (iNumComponents > 1)
-                    type = bformat("vec%d", iNumComponents);
+                    type = bformat("float%d", iNumComponents);
                 else
                     type = bformat("float");
                 break;
@@ -1722,12 +1722,12 @@ void ToHLSL::HandleInputRedirect(const Declaration *psDecl, const char *Precisio
         {
             // The count is actually stored in psOperand->aui32ArraySizes[0]
             origArraySize = psOperand->aui32ArraySizes[0];
-            bformata(glsl, "%s vec4 phase%d_Input%d_%d[%d];\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber, origArraySize);
+            bformata(glsl, "%s float4 phase%d_Input%d_%d[%d];\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber, origArraySize);
             needsLooping = 1;
             i = origArraySize - 1;
         }
         else
-            bformata(glsl, "%s vec4 phase%d_Input%d_%d;\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
+            bformata(glsl, "%s float4 phase%d_Input%d_%d;\n", Precision, psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
 
         psContext->indent++;
 
@@ -1737,9 +1737,9 @@ void ToHLSL::HandleInputRedirect(const Declaration *psDecl, const char *Precisio
             int comp = 0;
             bstring str = GetEarlyMain(psContext);
             if (needsLooping)
-                bformata(str, "phase%d_Input%d_%d[%d] = vec4(", psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber, i);
+                bformata(str, "phase%d_Input%d_%d[%d] = float4(", psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber, i);
             else
-                bformata(str, "phase%d_Input%d_%d = vec4(", psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
+                bformata(str, "phase%d_Input%d_%d = float4(", psContext->currentPhase, regSpace, psOperand->ui32RegisterNumber);
 
             while (comp < 4)
             {
@@ -1890,7 +1890,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 }
                 default:
                 {
-                    bformata(glsl, "in vec4 %s;\n", psDecl->asOperands[0].specialName.c_str());
+                    bformata(glsl, "in float4 %s;\n", psDecl->asOperands[0].specialName.c_str());
                 }
             }
             break;
@@ -2048,7 +2048,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 default:
                 {
                     // Sometimes DX compiler seems to declare patch constant outputs like this. Anyway, nothing for us to do.
-//                  bformata(glsl, "out vec4 %s;\n", psDecl->asOperands[0].specialName.c_str());
+//                  bformata(glsl, "out float4 %s;\n", psDecl->asOperands[0].specialName.c_str());
 
 /*                    bcatcstr(glsl, "#define ");
                     TranslateOperand(psContext, &psDecl->asOperands[0], TO_FLAG_NONE);
@@ -2192,7 +2192,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 case NAME_POSITION:
                 {
                     AddBuiltinInput(psDecl, "gl_FragCoord");
-                    bcatcstr(GetEarlyMain(psContext), "vec4 hlslcc_FragCoord = vec4(gl_FragCoord.xyz, 1.0/gl_FragCoord.w);\n");
+                    bcatcstr(GetEarlyMain(psContext), "float4 hlslcc_FragCoord = float4(gl_FragCoord.xyz, 1.0/gl_FragCoord.w);\n");
                     break;
                 }
                 case NAME_RENDER_TARGET_ARRAY_INDEX:
@@ -2554,7 +2554,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                     bformata(glsl, "UNITY_LOCATION(%d) ", actualBindingPoint);
                 }
 
-                bformata(glsl, "layout(std140) uniform %s {\n\tvec4 data[%d];\n} cb%d;\n", name, psOperand->aui32ArraySizes[1], ui32BindingPoint);
+                bformata(glsl, "layout(std140) uniform %s {\n\float4 data[%d];\n} cb%d;\n", name, psOperand->aui32ArraySizes[1], ui32BindingPoint);
                 break;
             }
 
@@ -2791,7 +2791,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             {
                 static const char * const types[] =
                 {
-                    "vec4", "ivec4", "bvec4", "uvec4"
+                    "float4", "int4", "bool4", "uint4"
                 };
 
                 for (int i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
@@ -2975,7 +2975,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             if (psContext->IsVulkan())
             {
                 bstring glsl = *psContext->currentGLSLString;
-                bformata(glsl, "const uvec4 ImmCB_%d[] = uvec4[%d] (\n", psContext->currentPhase, psDecl->asImmediateConstBuffer.size());
+                bformata(glsl, "const uint4 ImmCB_%d[] = uint4[%d] (\n", psContext->currentPhase, psDecl->asImmediateConstBuffer.size());
                 bool isFirst = true;
                 std::for_each(psDecl->asImmediateConstBuffer.begin(), psDecl->asImmediateConstBuffer.end(), [&](const ICBVec4 &data)
                 {
@@ -2984,14 +2984,14 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                         bcatcstr(glsl, ",\n");
                     }
                     isFirst = false;
-                    bformata(glsl, "\tuvec4(0x%X, 0x%X, 0x%X, 0x%X)", data.a, data.b, data.c, data.d);
+                    bformata(glsl, "\tuint4(0x%X, 0x%X, 0x%X, 0x%X)", data.a, data.b, data.c, data.d);
                 });
                 bcatcstr(glsl, ");\n");
             }
             else if (psContext->IsSwitch())
             {
                 bstring glsl = *psContext->currentGLSLString;
-                bformata(glsl, "const vec4 ImmCB_%d[] = vec4[%d] (\n", psContext->currentPhase, psDecl->asImmediateConstBuffer.size());
+                bformata(glsl, "const float4 ImmCB_%d[] = vec4[%d] (\n", psContext->currentPhase, psDecl->asImmediateConstBuffer.size());
                 bool isFirst = true;
                 std::for_each(psDecl->asImmediateConstBuffer.begin(), psDecl->asImmediateConstBuffer.end(), [&](const ICBVec4 &data)
                 {
@@ -3000,7 +3000,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                         bcatcstr(glsl, ",\n");
                     }
                     isFirst = false;
-                    bformata(glsl, "vec4(uintBitsToFloat(uint(0x%Xu)), uintBitsToFloat(uint(0x%Xu)), uintBitsToFloat(uint(0x%Xu)), uintBitsToFloat(uint(0x%Xu)))", data.a, data.b, data.c, data.d);
+                    bformata(glsl, "float4(asfloat(uint(0x%Xu)), asfloat(uint(0x%Xu)), asfloat(uint(0x%Xu)), asfloat(uint(0x%Xu)))", data.a, data.b, data.c, data.d);
                 });
                 bcatcstr(glsl, ");\n");
             }
@@ -3017,7 +3017,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                     if (componentCount == 1)
                         bformata(glsl, "float ImmCB_%d_%d_%d[%d];\n", psContext->currentPhase, chunk.first, chunk.second.m_Rebase, chunk.second.m_Size);
                     else
-                        bformata(glsl, "vec%d ImmCB_%d_%d_%d[%d];\n", componentCount, psContext->currentPhase, chunk.first, chunk.second.m_Rebase, chunk.second.m_Size);
+                        bformata(glsl, "float%d ImmCB_%d_%d_%d[%d];\n", componentCount, psContext->currentPhase, chunk.first, chunk.second.m_Rebase, chunk.second.m_Size);
 
                     if (!HaveDynamicIndexing(psContext))
                     {
@@ -3059,7 +3059,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                                 *(float*)&psDecl->asImmediateConstBuffer[i + chunk.first].c,
                                 *(float*)&psDecl->asImmediateConstBuffer[i + chunk.first].d
                             };
-                            bformata(tgt, "\tImmCB_%d_%d_%d[%d] = vec%d(", psContext->currentPhase, chunk.first, chunk.second.m_Rebase, i, componentCount);
+                            bformata(tgt, "\tImmCB_%d_%d_%d[%d] = float%d(", psContext->currentPhase, chunk.first, chunk.second.m_Rebase, i, componentCount);
                             for (uint32_t k = 0; k < componentCount; k++)
                             {
                                 if (k != 0)
@@ -3087,7 +3087,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             const uint32_t ui32RegIndex = psDecl->sIdxTemp.ui32RegIndex;
             const uint32_t ui32RegCount = psDecl->sIdxTemp.ui32RegCount;
             const uint32_t ui32RegComponentSize = psDecl->sIdxTemp.ui32RegComponentSize;
-            bformata(glsl, "vec%d TempArray%d[%d];\n", ui32RegComponentSize, ui32RegIndex, ui32RegCount);
+            bformata(glsl, "float%d TempArray%d[%d];\n", ui32RegComponentSize, ui32RegIndex, ui32RegCount);
             break;
         }
         case OPCODE_DCL_INDEX_RANGE:
@@ -3098,7 +3098,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 case OPERAND_TYPE_INPUT:
                 {
                     const ShaderInfo::InOutSignature* psSignature = NULL;
-                    const char* type = "vec";
+                    const char* type = "float";
                     const char* Precision = "";
                     uint32_t startReg = 0;
                     uint32_t i;
