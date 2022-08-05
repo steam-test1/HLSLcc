@@ -2858,7 +2858,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 for (int i = 0; i < sizeof(types) / sizeof(types[0]); ++i)
                 {
                     char const * t = types[i];
-                    bformata(glsl, "precise %s u_xlat_precise_%s;\n", t, t);
+                    bformata(GetEarlyMain(psContext), "precise %s u_xlat_precise_%s;\n", t, t);
                 }
             }
             if (ui32Flags & GLOBAL_FLAG_ENABLE_DOUBLE_PRECISION_FLOAT_OPS)
