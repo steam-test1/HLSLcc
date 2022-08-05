@@ -82,9 +82,12 @@ void ToHLSL::DeclareConstBufferShaderVariable(const char* varName, const struct 
         psContext->m_Reflection.OnConstant(varName, 0, type, psType->Rows, psType->Columns, isMatrix, psType->Elements, true);
     }
 
+    if (psCBuf->name != "$Globals")
+        bcatcstr(glsl, "\t");
+    
     if (psType->Class == SVC_STRUCT)
     {
-        bformata(glsl, "\t%s%s_Type %s", addUniformPrefix ? "UNITY_UNIFORM " : "", varName, varName);
+        bformata(glsl, "%s%s_Type %s", addUniformPrefix ? "UNITY_UNIFORM " : "", varName, varName);
         if (psType->Elements > 1)
         {
             if (HLSLcc::IsUnityFlexibleInstancingBuffer(psCBuf))
@@ -101,7 +104,7 @@ void ToHLSL::DeclareConstBufferShaderVariable(const char* varName, const struct 
         if (psContext->flags & HLSLCC_FLAG_TRANSLATE_MATRICES)
         {
             // Translate matrices into vec4 arrays
-            bformata(glsl, "\t%s%s " HLSLCC_TRANSLATE_MATRIX_FORMAT_STRING "%s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, 4), psType->Rows, psType->Columns, varName);
+            bformata(glsl, "%s%s " HLSLCC_TRANSLATE_MATRIX_FORMAT_STRING "%s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, 4), psType->Rows, psType->Columns, varName);
             uint32_t elemCount = (psType->Class == SVC_MATRIX_COLUMNS ? psType->Columns : psType->Rows);
             if (psType->Elements > 1)
             {
@@ -111,7 +114,7 @@ void ToHLSL::DeclareConstBufferShaderVariable(const char* varName, const struct 
         }
         else
         {
-            bformata(glsl, "\t%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetMatrixTypeName(psContext, psType->Type, psType->Columns, psType->Rows).c_str(), varName);
+            bformata(glsl, "%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetMatrixTypeName(psContext, psType->Type, psType->Columns, psType->Rows).c_str(), varName);
             if (psType->Elements > 1)
             {
                 bformata(glsl, "[%d]", psType->Elements);
@@ -120,7 +123,7 @@ void ToHLSL::DeclareConstBufferShaderVariable(const char* varName, const struct 
     }
     else if (psType->Class == SVC_VECTOR && psType->Columns > 1)
     {
-        bformata(glsl, "\t%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, psType->Columns), varName);
+        bformata(glsl, "%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, psType->Columns), varName);
 
         if (psType->Elements > 1)
         {
@@ -138,7 +141,7 @@ void ToHLSL::DeclareConstBufferShaderVariable(const char* varName, const struct 
             ((ShaderVarType *)psType)->Type = SVT_INT;
         }
 
-        bformata(glsl, "\t%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, 1), varName);
+        bformata(glsl, "%s%s %s", addUniformPrefix ? "UNITY_UNIFORM " : "", HLSLcc::GetConstructorForType(psContext, psType->Type, 1), varName);
 
         if (psType->Elements > 1)
         {
