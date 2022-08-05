@@ -132,6 +132,9 @@ private:
 
     std::vector<std::string> m_DefinedStructs;
 
+    // The map is keyed by struct name. The special name "" (empty string) is reserved for entry point function parameters
+    StructDefinitions m_StructDefinitions;
+
     std::set<uint32_t> m_DeclaredRenderTarget;
     int m_NumDeclaredWhileTrueLoops;
 

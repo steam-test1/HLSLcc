@@ -985,7 +985,26 @@ bool ToHLSL::Translate()
         bconcat(glsl, beforeMainKeyword);
     }
 
-    bcatcstr(glsl, "void main()\n{\n");
+    for (auto mem = m_StructDefinitions.begin(); mem != m_StructDefinitions.end(); ++mem)
+    {
+        if (mem->first == "")
+            continue;
+
+        bcatcstr(glsl, "struct ");
+        bcatcstr(glsl, mem->first.c_str());
+        bcatcstr(glsl, "\n{\n");
+        psContext->indent++;
+        for (auto it = mem->second.m_Members.begin(); it != mem->second.m_Members.end(); ++it)
+        {
+            psContext->AddIndentation();
+            bcatcstr(glsl, it->second.c_str());
+            bcatcstr(glsl, ";\n");
+        }
+        psContext->indent--;
+        bcatcstr(glsl, "}\n\n");
+    }
+
+    bcatcstr(glsl, "outputStruct main(inputStruct v)\n{\n");
 
     psContext->indent++;
 
