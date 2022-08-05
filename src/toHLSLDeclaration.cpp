@@ -1092,6 +1092,7 @@ static void DeclareBufferVariable(HLSLCrossCompilerContext* psContext, uint32_t 
         psContext->m_Reflection.OnBufferBinding(BufName, slot, isUAV);
 }
 
+// TODO(pema): Handle custom cbuffers (ones declared in user shader)
 void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
     const ConstantBuffer* psCBuf, const Operand* psOperand,
     bstring glsl)
@@ -1113,18 +1114,14 @@ void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
         return;
 
     uint32_t i;
-    int useGlobalsStruct = 1;
+    int isRealCBuffer = 1;
     bool skipUnused = false;
 
-    if ((psContext->flags & HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT) && psCBuf->name[0] == '$')
-        useGlobalsStruct = 0;
+    if (psCBuf->name[0] == '$')
+        isRealCBuffer = 0;
 
-    if ((psContext->flags & HLSLCC_FLAG_REMOVE_UNUSED_GLOBALS) && psCBuf->name == "$Globals")
+    if (psCBuf->name == "$Globals")
         skipUnused = true;
-
-    if ((psContext->flags & HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) == 0)
-        useGlobalsStruct = 0;
-
 
     for (i = 0; i < psCBuf->asVars.size(); ++i)
     {
@@ -1144,12 +1141,12 @@ void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
     }
     else
     {
-        if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions, psContext->flags))
-            bformata(glsl, "layout(location = %d) ", ui32BindingPoint);
+        //if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions, psContext->flags))
+        //    bformata(glsl, "layout(location = %d) ", ui32BindingPoint);
     }
-    if (useGlobalsStruct)
+    if (isRealCBuffer)
     {
-        bcatcstr(glsl, "uniform struct ");
+        bcatcstr(glsl, "cbuffer ");
         TranslateOperand(psOperand, TO_FLAG_DECLARATION_NAME);
 
         bcatcstr(glsl, "_Type {\n");
@@ -1180,13 +1177,13 @@ void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
         if (skipUnused && !psCBuf->asVars[i].sType.m_IsUsed)
             continue;
 
-        if (!useGlobalsStruct)
+        if (!isRealCBuffer)
             bcatcstr(glsl, "uniform ");
 
         DeclareConstBufferShaderVariable(psCBuf->asVars[i].name.c_str(), &psCBuf->asVars[i].sType, psCBuf, 0, false, true);
     }
 
-    if (useGlobalsStruct)
+    if (isRealCBuffer)
     {
         bcatcstr(glsl, "} ");
 

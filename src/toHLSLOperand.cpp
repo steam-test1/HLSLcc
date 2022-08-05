@@ -1006,7 +1006,8 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
             }
 
             // FIXME: With ES 3.0 the buffer name is often not prepended to variable names
-            if (((psContext->flags & HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) != HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) &&
+            // NOTE: HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT is ignored and always set true for HLSL
+            /*if (((psContext->flags & HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) != HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) &&
                 ((psContext->flags & HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT) != HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT))
             {
                 if (psCBuf)
@@ -1029,7 +1030,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                 {
                     //bformata(glsl, "cb%d", psOperand->aui32ArraySizes[0]);
                 }
-            }
+            }*/
 
             if ((ui32TOFlag & TO_FLAG_DECLARATION_NAME) != TO_FLAG_DECLARATION_NAME)
             {
