@@ -150,7 +150,8 @@ bool HLSLCrossCompilerContext::RequireExtension(const std::string &extName)
         return true;
 
     m_EnabledExtensions.insert(extName);
-    bformata(extensions, "#extension %s : require\n", extName.c_str());
+    if (this->psShader->eTargetLanguage != LANG_HLSL)
+        bformata(extensions, "#extension %s : require\n", extName.c_str());
     return false;
 }
 
@@ -160,9 +161,12 @@ bool HLSLCrossCompilerContext::EnableExtension(const std::string &extName)
         return true;
 
     m_EnabledExtensions.insert(extName);
-    bformata(extensions, "#ifdef %s\n", extName.c_str());
-    bformata(extensions, "#extension %s : enable\n", extName.c_str());
-    bcatcstr(extensions, "#endif\n");
+    if (this->psShader->eTargetLanguage != LANG_HLSL)
+    {
+        bformata(extensions, "#ifdef %s\n", extName.c_str());
+        bformata(extensions, "#extension %s : enable\n", extName.c_str());
+        bcatcstr(extensions, "#endif\n");
+    }
     return false;
 }
 

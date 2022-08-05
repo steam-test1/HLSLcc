@@ -665,7 +665,7 @@ bool ToHLSL::Translate()
         bcatcstr(glsl, "#endif\n");
     }
 
-    if (psContext->psShader->eTargetLanguage != LANG_ES_100)
+    /*if (psContext->psShader->eTargetLanguage != LANG_ES_100)
     {
         bool hasConstantBuffers = psContext->psShader->sInfo.psConstantBuffers.size() > 0;
         if (hasConstantBuffers)
@@ -689,7 +689,7 @@ bool ToHLSL::Translate()
             bcatcstr(glsl, "#define UNITY_SUPPORTS_UNIFORM_LOCATION 1\n");
             bcatcstr(glsl, "#if UNITY_SUPPORTS_UNIFORM_LOCATION\n#define UNITY_LOCATION(x) layout(location = x)\n#define UNITY_BINDING(x) layout(binding = x, std140)\n#else\n#define UNITY_LOCATION(x)\n#define UNITY_BINDING(x) layout(std140)\n#endif\n");
         }
-    }
+    }*/
 
     for (ui32Phase = 0; ui32Phase < psShader->asPhases.size(); ui32Phase++)
     {

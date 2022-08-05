@@ -1675,7 +1675,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
             ((psContext->flags & HLSLCC_FLAG_FORCE_EXPLICIT_LOCATIONS) && ((psContext->flags & HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS) != HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS)))
         {
             GLSLCrossDependencyData::GLSLBufferBindPointInfo slotInfo = psContext->psDependencies->GetGLSLResourceBinding(tname, GLSLCrossDependencyData::BufferType_Texture);
-            bformata(glsl, "UNITY_LOCATION(%d) ", slotInfo.slot);
+            bformata(glsl, "layout(binding = %d, std140) ", slotInfo.slot);
         }
         bcatcstr(glsl, "uniform ");
         bcatcstr(glsl, samplerPrecision);
@@ -2552,7 +2552,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 {
                     if (!psContext->IsVulkan() && !isKnown && UseReflection(psContext))
                         psContext->m_Reflection.OnConstantBufferBinding(name, actualBindingPoint);
-                    bformata(glsl, "UNITY_LOCATION(%d) ", actualBindingPoint);
+                    bformata(glsl, "layout(binding = %d, std140) ", actualBindingPoint);
                 }
 
                 bformata(glsl, "layout(std140) uniform %s {\n\float4 data[%d];\n} cb%d;\n", name, psOperand->aui32ArraySizes[1], ui32BindingPoint);
@@ -2704,7 +2704,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 0);
                 GLSLCrossDependencyData::GLSLBufferBindPointInfo slotInfo = psContext->psDependencies->GetGLSLResourceBinding(tname, GLSLCrossDependencyData::BufferType_Texture);
 
-                bformata(glsl, "UNITY_LOCATION(%d) ", slotInfo.slot);
+                bformata(glsl, "layout(binding = %d, std140) ", slotInfo.slot);
                 if (!slotInfo.known && UseReflection(psContext))
                 {
                     const RESOURCE_DIMENSION dim = psDecl->value.eResourceDimension;
