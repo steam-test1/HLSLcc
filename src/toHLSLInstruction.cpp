@@ -1100,7 +1100,7 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     Operand* psSrcDy = (ui32Flags & TEXSMP_FLAG_GRAD) ? &psInst->asOperands[5] : 0;
     Operand* psSrcBias = (ui32Flags & TEXSMP_FLAG_BIAS) ? &psInst->asOperands[4] : 0;
 
-    const char* funcName = "texture";
+    const char* funcName = "tex2D";
     const char* offset = "";
     const char* depthCmpCoordType = "";
     const char* gradSwizzle = "";
@@ -1109,7 +1109,6 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     uint32_t ui32NumOffsets = 0;
 
     const RESOURCE_DIMENSION eResDim = psContext->psShader->aeResourceDims[psSrcTex->ui32RegisterNumber];
-    const int iHaveOverloadedTexFuncs = HaveOverloadedTextureFuncs(psContext->psShader->eTargetLanguage);
     const int useCombinedTextureSamplers = (psContext->flags & HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS) ? 1 : 0;
 
     if (psInst->bAddressOffset)
@@ -1130,13 +1129,10 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float2";
             gradSwizzle = ".x";
             ui32NumOffsets = 1;
-            if (!iHaveOverloadedTexFuncs)
+            funcName = "texture1D"; // TODO(pema): WTF is a texture1d
+            if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
             {
-                funcName = "texture1D";
-                if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
-                {
-                    funcName = "shadow1D";
-                }
+                funcName = "shadow1D";
             }
             break;
         }
@@ -1145,13 +1141,10 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "vec3";
             gradSwizzle = ".xy";
             ui32NumOffsets = 2;
-            if (!iHaveOverloadedTexFuncs)
+            funcName = "tex2D";
+            if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) // TODO(pema): Wat dis
             {
-                funcName = "texture2D";
-                if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
-                {
-                    funcName = "shadow2D";
-                }
+                funcName = "tex2D";
             }
             break;
         }
@@ -1160,10 +1153,7 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float4";
             gradSwizzle = ".xyz";
             ui32NumOffsets = 3;
-            if (!iHaveOverloadedTexFuncs)
-            {
-                funcName = "textureCube";
-            }
+            funcName = "texCUBE";
             break;
         }
         case RESOURCE_DIMENSION_TEXTURE3D:
@@ -1171,10 +1161,7 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float4";
             gradSwizzle = ".xyz";
             ui32NumOffsets = 3;
-            if (!iHaveOverloadedTexFuncs)
-            {
-                funcName = "texture3D";
-            }
+            funcName = "tex3D";
             break;
         }
         case RESOURCE_DIMENSION_TEXTURE1DARRAY:
@@ -1204,11 +1191,12 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
         }
     }
 
-    if (ui32Flags & TEXSMP_FLAG_GATHER)
+    if (ui32Flags & TEXSMP_FLAG_GATHER) // TODO(pema): Wat dis
         funcName = "textureGather";
 
     uint32_t uniqueNameCounter = 0;
 
+    // TODO(pema): A whole bunch of shit down here
     // In GLSL, for every texture sampling func overload, except for cubemap arrays, the
     // depth compare reference value is given as the last component of the texture coord vector.
     // Cubemap array sampling as well as all the gather funcs have a separate parameter for it.
