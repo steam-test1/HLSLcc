@@ -2921,7 +2921,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//RSQ\n");
             }
-            CallHelper1("inversesqrt", psInst, 0, 1, 1);
+            CallHelper1("rsqrt", psInst, 0, 1, 1);
             break;
         }
         case OPCODE_EXP:
@@ -2971,8 +2971,6 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//ROUND_Z\n");
             }
-            if (psContext->psShader->eTargetLanguage == LANG_ES_100)
-                UseExtraFunctionDependency("trunc");
 
             CallHelper1("trunc", psInst, 0, 1, 1);
             break;
@@ -2997,7 +2995,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//FRC\n");
             }
-            CallHelper1("fract", psInst, 0, 1, 1);
+            CallHelper1("frac", psInst, 0, 1, 1);
             break;
         }
         case OPCODE_IMAX:
@@ -3278,7 +3276,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
             const int dstCompCount = dst->eSelMode == OPERAND_4_COMPONENT_MASK_MODE ? dst->ui32CompMask : OPERAND_4_COMPONENT_MASK_ALL;
 
             TranslateOperand(dst, TO_FLAG_INTEGER | TO_FLAG_DESTINATION);
-            bcatcstr(glsl, " = bitCount(");
+            bcatcstr(glsl, " = countbits(");
             TranslateOperand(&psInst->asOperands[1], TO_FLAG_INTEGER, dstCompCount);
             bcatcstr(glsl, ");\n");
             break;
@@ -3361,7 +3359,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
             if (numoverall_elements == 1)
                 bformata(glsl, "int(");
             else
-                bformata(glsl, "ivec%d(", numoverall_elements);
+                bformata(glsl, "int%d(", numoverall_elements);
 
             k = 0;
             for (i = 0; i < 4; ++i)
