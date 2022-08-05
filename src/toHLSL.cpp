@@ -985,9 +985,42 @@ bool ToHLSL::Translate()
         bconcat(glsl, beforeMainKeyword);
     }
 
-    bcatcstr(glsl, "void main()\n{\n");
+    // Declare structs in scope
+    for (auto mem = m_StructDefinitions.begin(); mem != m_StructDefinitions.end(); ++mem)
+    {
+        if (mem->first == "") // function inputs are skipped
+            continue;
+
+        bcatcstr(glsl, "struct ");
+        bcatcstr(glsl, mem->first.c_str());
+        bcatcstr(glsl, "\n{\n");
+        psContext->indent++;
+        for (auto it = mem->second.m_Members.begin(); it != mem->second.m_Members.end(); ++it)
+        {
+            psContext->AddIndentation();
+            bcatcstr(glsl, it->second.c_str());
+            bcatcstr(glsl, ";\n");
+        }
+        psContext->indent--;
+        bcatcstr(glsl, "}\n\n");
+    }
+
+    // Declare entry point
+    char* entryPointName;
+    switch (psContext->psShader->eShaderType)
+    {
+        case VERTEX_SHADER:  entryPointName = "vert"; break;
+        case PIXEL_SHADER:   entryPointName = "frag"; break;
+        case COMPUTE_SHADER: entryPointName = "csmain"; break;
+        case HULL_SHADER:    entryPointName = "hull"; break;
+        case DOMAIN_SHADER:  entryPointName = "dom"; break;
+        default: ASSERT(0);return "";
+    }
+    bformata(glsl, "%s %s(%s %s)\n{\n", GetOutputStructName().c_str(), entryPointName, GetInputStructName().c_str(), GetInputStructVariableName().c_str());
 
     psContext->indent++;
+    psContext->AddIndentation();
+    bformata(glsl, "%s %s = (%s)0;\n", GetOutputStructName().c_str(), GetOutputStructVariableName().c_str(), GetOutputStructName().c_str());
 
     if (psContext->psShader->asPhases[0].earlyMain->slen > 1)
     {
@@ -1088,6 +1121,63 @@ bool ToHLSL::DeclareExtraFunction(const std::string &name, bstring body)
     m_FunctionDefinitions.insert(std::make_pair(name, (const char *)body->data));
     m_FunctionDefinitionsOrder.push_back(name);
     return false;
+}
+
+std::string ToHLSL::GetOutputStructName() const
+{
+    switch (psContext->psShader->eShaderType)
+    {
+    case VERTEX_SHADER:
+        return "VertexOut";
+    case PIXEL_SHADER:
+        return "FragmentOut";
+    case HULL_SHADER:
+        if (psContext->psShader->asPhases[psContext->currentPhase].ePhase == HS_FORK_PHASE ||
+            psContext->psShader->asPhases[psContext->currentPhase].ePhase == HS_JOIN_PHASE)
+            return "PatchConstant";
+        return "ControlPoint";
+    case DOMAIN_SHADER:
+        return "VertexOutPostTess";
+    default:
+        ASSERT(0);
+        return "";
+    }
+}
+
+std::string ToHLSL::GetInputStructName() const
+{
+    switch (psContext->psShader->eShaderType)
+    {
+    case VERTEX_SHADER:
+        return "VertexIn";
+    case PIXEL_SHADER:
+        return "FragmentIn";
+    case COMPUTE_SHADER:
+        return "KernelIn";
+    case HULL_SHADER:
+        return "HullIn";
+    case DOMAIN_SHADER:
+        return "VertexInPostTess";
+    default:
+        ASSERT(0);
+        return "";
+    }
+}
+
+std::string ToHLSL::GetOutputStructVariableName() const
+{
+    std::string name = GetOutputStructName();
+    if (name.length() > 0)
+        name[0] = tolower(name[0]);
+    return name;
+}
+
+std::string ToHLSL::GetInputStructVariableName() const
+{
+    std::string name = GetInputStructName();
+    if (name.length() > 0)
+        name[0] = tolower(name[0]);
+    return name;
 }
 
 static void PrintComponentWrapper1(bstring code, const char *func, const char *type2, const char *type3, const char *type4)

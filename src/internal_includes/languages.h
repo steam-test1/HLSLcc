@@ -36,7 +36,7 @@ static int ShaderBitEncodingSupported(const GLLang eLang)
 
 static int HaveOverloadedTextureFuncs(const GLLang eLang)
 {
-    if (eLang == LANG_ES_100 || eLang == LANG_120)
+    if (eLang == LANG_ES_100 || eLang == LANG_120 || eLang == LANG_HLSL)
     {
         return 0;
     }

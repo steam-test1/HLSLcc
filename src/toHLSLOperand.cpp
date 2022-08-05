@@ -743,6 +743,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                         else
                         {
                             std::string name = psContext->GetDeclaredInputName(psOperand, piRebase, 0, pui32IgnoreSwizzle);
+                            bformata(glsl, "%s.", GetInputStructVariableName().c_str());
 
                             // Rewrite the variable name if we're using framebuffer fetch
                             if (psContext->psShader->extensions->EXT_shader_framebuffer_fetch &&
@@ -787,6 +788,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                     bcatcstr(glsl, "gl_out[gl_InvocationID].");
                 }
 
+                bformata(glsl, "%s.", GetOutputStructVariableName().c_str());
                 bcatcstr(glsl, name.c_str());
 
                 if (psOperand->m_SubOperands[0].get())
@@ -1006,7 +1008,8 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
             }
 
             // FIXME: With ES 3.0 the buffer name is often not prepended to variable names
-            if (((psContext->flags & HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) != HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) &&
+            // NOTE: HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT is ignored and always set true for HLSL
+            /*if (((psContext->flags & HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) != HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT) &&
                 ((psContext->flags & HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT) != HLSLCC_FLAG_DISABLE_GLOBALS_STRUCT))
             {
                 if (psCBuf)
@@ -1029,7 +1032,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                 {
                     //bformata(glsl, "cb%d", psOperand->aui32ArraySizes[0]);
                 }
-            }
+            }*/
 
             if ((ui32TOFlag & TO_FLAG_DECLARATION_NAME) != TO_FLAG_DECLARATION_NAME)
             {
