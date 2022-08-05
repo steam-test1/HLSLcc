@@ -2241,7 +2241,6 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             bool isOut = psDecl->eOpcode >= OPCODE_DCL_OUTPUT;
 
             const Operand* psOperand = &psDecl->asOperands[0];
-            int iNumComponents = psOperand->GetNumInputElements(psContext);
             const char* StorageQualifier = "varying";
             const char* Precision = "";
             std::string inputName;
@@ -2256,10 +2255,17 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 inputName = psContext->GetDeclaredInputName(psOperand, NULL, 1, NULL);
 
             const ShaderInfo::InOutSignature* psSignature = NULL;
-
-            psShader->sInfo.GetInputSignatureFromRegister(psDecl->asOperands[0].ui32RegisterNumber,
-                psDecl->asOperands[0].ui32CompMask,
-                &psSignature);
+            if (isOut)
+                psShader->sInfo.GetOutputSignatureFromRegister(
+                    psDecl->asOperands[0].ui32RegisterNumber,
+                    psDecl->asOperands[0].ui32CompMask,
+                    psShader->ui32CurrentVertexOutputStream,
+                    &psSignature);
+            else
+                psShader->sInfo.GetInputSignatureFromRegister(psDecl->asOperands[0].ui32RegisterNumber,
+                    psDecl->asOperands[0].ui32CompMask,
+                    &psSignature);
+            int iNumComponents = HLSLcc::GetNumberBitsSet(psSignature->ui32Mask);
 
             std::string type;
             std::string append = (iNumComponents > 1 ? std::to_string(iNumComponents) : "");
