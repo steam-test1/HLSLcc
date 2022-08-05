@@ -15,6 +15,7 @@
 #include <cmath>
 #include "internal_includes/toHLSL.h"
 #include "UnityInstancingFlexibleArraySize.h"
+#include <unordered_set>
 
 using namespace HLSLcc;
 
@@ -1095,6 +1096,22 @@ void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
     const ConstantBuffer* psCBuf, const Operand* psOperand,
     bstring glsl)
 {
+    // Don't emit cbuffers that already exist.
+    static const std::unordered_set<std::string> knownCBuffers
+    {
+        "UnityPerDraw", "UnityPerDraw1", "UnityPerDrawRare", "UnityLighting", "UnityShadows",
+        "UnityStereoGlobals", "UnityStereoEyeIndex", "UnityStereoEyeIndices", "UnityPerCamera",
+        "UnityPerCamera2", "UnityPerCameraRare", "UnityPerFrame", "UnityFog", "UnityLightmaps",
+        "UnityReflectionProbes", "UnityProbeVolume", "UnityTerrainImposter", "UnityBillboardPerCamera",
+        "UnityBillboardPerBatch", "UnityPerDrawSprite", "UnityInstancing_PerDraw0", "UnityInstancing_PerDraw1",
+        "UnityInstancing_PerDraw2", "UnityInstancing_Builtins0", "UnityInstancing_Builtins1",
+        "UnityInstancing_Builtins2", "UnityInstancing_UnityDrawCallInfo", "PerDraw0", "PerDraw1",
+        "PerDraw2", "Builtins0", "Builtins1", "Builtins2", "UnityDrawCallInfo"
+    };
+
+    if (knownCBuffers.find(psCBuf->name) != knownCBuffers.end())
+        return;
+
     uint32_t i;
     int useGlobalsStruct = 1;
     bool skipUnused = false;
