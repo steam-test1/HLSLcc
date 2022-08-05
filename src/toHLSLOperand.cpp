@@ -743,6 +743,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                         else
                         {
                             std::string name = psContext->GetDeclaredInputName(psOperand, piRebase, 0, pui32IgnoreSwizzle);
+                            bformata(glsl, "%s.", GetInputStructVariableName().c_str());
 
                             // Rewrite the variable name if we're using framebuffer fetch
                             if (psContext->psShader->extensions->EXT_shader_framebuffer_fetch &&
@@ -787,6 +788,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                     bcatcstr(glsl, "gl_out[gl_InvocationID].");
                 }
 
+                bformata(glsl, "%s.", GetOutputStructVariableName().c_str());
                 bcatcstr(glsl, name.c_str());
 
                 if (psOperand->m_SubOperands[0].get())

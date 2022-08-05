@@ -3196,7 +3196,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 }
             }
             psContext->AddIndentation();
-            bcatcstr(glsl, "return;\n");
+            bformata(glsl, "return %s;\n", GetOutputStructVariableName().c_str());
             break;
         }
         case OPCODE_INTERFACE_CALL:

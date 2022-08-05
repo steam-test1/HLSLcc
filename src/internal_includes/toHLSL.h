@@ -113,9 +113,14 @@ private:
 
     void HandleSwitchTransformation(Instruction* psInst, bstring glsl);
 
+    std::string GetOutputStructName() const;
+    std::string GetInputStructName() const;
+    std::string GetOutputStructVariableName() const;
+    std::string GetInputStructVariableName() const;
+
     // Add an extra function to the m_FunctionDefinitions list, unless it's already there.
     bool DeclareExtraFunction(const std::string &name, bstring body);
-    void UseExtraFunctionDependency(const std::string &name);
+    void UseExtraFunctionDependency(const std::string& name);
 
     void DeclareDynamicIndexWrapper(const struct ShaderVarType* psType);
     void DeclareDynamicIndexWrapper(const char* psName, SHADER_VARIABLE_CLASS eClass, SHADER_VARIABLE_TYPE eType, uint32_t ui32Rows, uint32_t ui32Columns, uint32_t ui32Elements);

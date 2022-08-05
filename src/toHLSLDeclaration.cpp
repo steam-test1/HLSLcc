@@ -2278,7 +2278,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             }
 
             // TODO(pema): interpolation, precision
-            auto& defs = isOut ? m_StructDefinitions["outputStruct"] : m_StructDefinitions["inputStruct"];
+            auto& defs = isOut ? m_StructDefinitions[GetOutputStructName()] : m_StructDefinitions[GetInputStructName()];
             defs.m_Members.push_back(std::make_pair(
                 inputName,
                 type + " " + inputName + " : " + psSignature->semanticName + std::to_string(psSignature->ui32SemanticIndex)
