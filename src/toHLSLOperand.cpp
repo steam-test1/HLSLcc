@@ -1845,7 +1845,7 @@ std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32
         ++i;
     }
 
-
+    // TODO(pema): Depth-enabled textures need special handling. See HLSLSupport.cginc, specifically UNITY_DECLARE_SHADOWMAP
     if (bZCompare)
     {
         oss << "hlslcc_zcmp";

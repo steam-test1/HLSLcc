@@ -1095,24 +1095,42 @@ static void DeclareBufferVariable(HLSLCrossCompilerContext* psContext, uint32_t 
         psContext->m_Reflection.OnBufferBinding(BufName, slot, isUAV);
 }
 
+const std::unordered_set<std::string> knownGlobals
+{
+    "unity_ProbeVolumeSH", "unity_Lightmap", "unity_LightmapInd", "unity_ShadowMask",
+    "unity_DynamicLightmap", "unity_DynamicDirectionality", "unity_DynamicNormal",
+    "unity_SpecCube0", "unity_SpecCube1", "unity_MatrixMVP", "unity_MatrixMV",
+    "unity_MatrixTMV", "unity_MatrixITMV", "_ShadowMapTexture", "_LightTexture0",
+    "unity_WorldToLight", "_LightTextureB0", "unity_ObjectToWorld", "unity_WorldToObject",
+    "_WorldSpaceCameraPos", "_ProjectionParams", "_ScreenParams", "_ZBufferParams",
+    "unity_OrthoParams", "unity_CameraProjection", "unity_CameraInvProjection",
+    "unity_CameraWorldClipPlanes", "_Time", "_SinTime", "_CosTime", "unity_DeltaTime",
+    "_LightColor0", "_WorldSpaceLightPos0", "unity_WorldToLight", "unity_4LightPosX0",
+    "unity_4LightPosY0", "unity_4LightPosZ0", "unity_4LightAtten0", "unity_LightColor",
+    "unity_WorldToShadow", "_LightColor", "unity_LightPosition", "unity_LightAtten",
+    "unity_SpotDirection", "unity_LightmapST", "unity_AmbientSky", "unity_AmbientEquator",
+    "unity_AmbientGround", "unity_FogColor", "unity_FogParams", "unity_LODFade", "_TextureSampleAdd"
+};
+
+const std::unordered_set<std::string> knownCBuffers
+{
+    "UnityPerDraw", "UnityPerDraw1", "UnityPerDrawRare", "UnityLighting", "UnityShadows",
+    "UnityStereoGlobals", "UnityStereoEyeIndex", "UnityStereoEyeIndices", "UnityPerCamera",
+    "UnityPerCamera2", "UnityPerCameraRare", "UnityPerFrame", "UnityFog", "UnityLightmaps",
+    "UnityReflectionProbes", "UnityProbeVolume", "UnityTerrainImposter", "UnityBillboardPerCamera",
+    "UnityBillboardPerBatch", "UnityPerDrawSprite", "UnityInstancing_PerDraw0", "UnityInstancing_PerDraw1",
+    "UnityInstancing_PerDraw2", "UnityInstancing_Builtins0", "UnityInstancing_Builtins1",
+    "UnityInstancing_Builtins2", "UnityInstancing_UnityDrawCallInfo", "PerDraw0", "PerDraw1",
+    "PerDraw2", "Builtins0", "Builtins1", "Builtins2", "UnityDrawCallInfo", "SpeedTreeWind",
+    "UnityTerrain", "UnityMetaPass", "UnityLightingOld", "UITransforms", "UIClipRects"
+};
+
 // TODO(pema): Handle custom cbuffers (ones declared in user shader)
 void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
     const ConstantBuffer* psCBuf, const Operand* psOperand,
     bstring glsl)
 {
     // Don't emit cbuffers that already exist.
-    static const std::unordered_set<std::string> knownCBuffers
-    {
-        "UnityPerDraw", "UnityPerDraw1", "UnityPerDrawRare", "UnityLighting", "UnityShadows",
-        "UnityStereoGlobals", "UnityStereoEyeIndex", "UnityStereoEyeIndices", "UnityPerCamera",
-        "UnityPerCamera2", "UnityPerCameraRare", "UnityPerFrame", "UnityFog", "UnityLightmaps",
-        "UnityReflectionProbes", "UnityProbeVolume", "UnityTerrainImposter", "UnityBillboardPerCamera",
-        "UnityBillboardPerBatch", "UnityPerDrawSprite", "UnityInstancing_PerDraw0", "UnityInstancing_PerDraw1",
-        "UnityInstancing_PerDraw2", "UnityInstancing_Builtins0", "UnityInstancing_Builtins1",
-        "UnityInstancing_Builtins2", "UnityInstancing_UnityDrawCallInfo", "PerDraw0", "PerDraw1",
-        "PerDraw2", "Builtins0", "Builtins1", "Builtins2", "UnityDrawCallInfo"
-    };
-
     if (knownCBuffers.find(psCBuf->name) != knownCBuffers.end())
         return;
 
@@ -1180,10 +1198,22 @@ void ToHLSL::DeclareStructConstants(const uint32_t ui32BindingPoint,
         if (skipUnused && !psCBuf->asVars[i].sType.m_IsUsed)
             continue;
 
+        const char* varName = psCBuf->asVars[i].name.c_str();
         if (!isRealCBuffer)
-            bcatcstr(glsl, "uniform ");
+        {
+            // Don't emit globals that already exist
+            if (knownGlobals.find(varName) != knownGlobals.end())
+                continue;
 
-        DeclareConstBufferShaderVariable(psCBuf->asVars[i].name.c_str(), &psCBuf->asVars[i].sType, psCBuf, 0, false, true);
+            bformata(glsl, "#ifndef %s_DEFINED\n", varName);
+            bformata(glsl, "#define %s_DEFINED\n", varName);
+            bcatcstr(glsl, "uniform ");
+        }
+
+        DeclareConstBufferShaderVariable(varName, &psCBuf->asVars[i].sType, psCBuf, 0, false, true);
+
+        if (!isRealCBuffer)
+            bcatcstr(glsl, "#endif\n");
     }
 
     if (isRealCBuffer)
@@ -1497,7 +1527,7 @@ const char* GetSamplerTypeHLSL(HLSLCrossCompilerContext* psContext,
                 case RETURN_TYPE_UINT:
                     return "usamplerCube";
                 default:
-                    return "samplerCube";
+                    return "samplerCUBE";
             }
             break;
         }
@@ -1603,7 +1633,7 @@ static void TranslateVulkanResource(HLSLCrossCompilerContext* psContext, const D
 
     GLSLCrossDependencyData::VulkanResourceBinding binding = psContext->psDependencies->GetVulkanResourceBinding(tname);
     bformata(glsl, "layout(set = %d, binding = %d) ", binding.set, binding.binding);
-    bcatcstr(glsl, "uniform ");
+    bcatcstr(glsl, "uniform");
     bcatcstr(glsl, samplerPrecision);
     bcatcstr(glsl, samplerTypeName);
     bcatcstr(glsl, " ");
@@ -1653,40 +1683,59 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
             for (i = psDecl->samplersUsed.begin(); i != psDecl->samplersUsed.end(); i++)
             {
                 std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i, 1);
+                if (knownGlobals.find(tname) != knownGlobals.end())
+                    return;
+                bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
+                bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
                 bcatcstr(glsl, "uniform");
                 bcatcstr(glsl, samplerPrecision);
                 bcatcstr(glsl, samplerTypeName);
-                bcatcstr(glsl, "Shadow ");
+                bcatcstr(glsl, " ");//bcatcstr(glsl, "Shadow ");
                 bcatcstr(glsl, tname.c_str());
                 bcatcstr(glsl, ";\n");
+                bcatcstr(glsl, "#endif\n");
             }
         }
         for (i = psDecl->samplersUsed.begin(); i != psDecl->samplersUsed.end(); i++)
         {
             std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i, 0);
+            if (knownGlobals.find(tname) != knownGlobals.end())
+                return;
+            bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
+            bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
             bcatcstr(glsl, "uniform");
             bcatcstr(glsl, samplerPrecision);
             bcatcstr(glsl, samplerTypeName);
             bcatcstr(glsl, " ");
             bcatcstr(glsl, tname.c_str());
             bcatcstr(glsl, ";\n");
+            bcatcstr(glsl, "#endif\n");
         }
     }
 
     std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 0);
+    if (knownGlobals.find(tname) != knownGlobals.end())
+        return;
 
+    bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
+    bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
     bcatcstr(glsl, "uniform");
     bcatcstr(glsl, samplerPrecision);
     bcatcstr(glsl, samplerTypeName);
     bcatcstr(glsl, " ");
     bcatcstr(glsl, tname.c_str());
     bcatcstr(glsl, ";\n");
+    bcatcstr(glsl, "#endif\n");
 
+
+    // TODO(pema): Figure this out. Something about shadow map textures
     if (samplerCanDoShadowCmp && psDecl->ui32IsShadowTex)
     {
         //Create shadow and non-shadow sampler.
         //HLSL does not have separate types for depth compare, just different functions.
         std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 1);
+        if (knownGlobals.find(tname) != knownGlobals.end())
+            return;
 
         if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions, psContext->flags) ||
             ((psContext->flags & HLSLCC_FLAG_FORCE_EXPLICIT_LOCATIONS) && ((psContext->flags & HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS) != HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS)))
@@ -1694,12 +1743,16 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
             GLSLCrossDependencyData::GLSLBufferBindPointInfo slotInfo = psContext->psDependencies->GetGLSLResourceBinding(tname, GLSLCrossDependencyData::BufferType_Texture);
             //bformata(glsl, "layout(binding = %d, std140) ", slotInfo.slot);
         }
-        bcatcstr(glsl, "uniform ");
+
+        bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
+        bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
+        bcatcstr(glsl, "uniform");
         bcatcstr(glsl, samplerPrecision);
         bcatcstr(glsl, samplerTypeName);
-        bcatcstr(glsl, "Shadow ");
+        bcatcstr(glsl, " ");//bcatcstr(glsl, "Shadow ");
         bcatcstr(glsl, tname.c_str());
         bcatcstr(glsl, ";\n");
+        bcatcstr(glsl, "#endif\n");
     }
 }
 

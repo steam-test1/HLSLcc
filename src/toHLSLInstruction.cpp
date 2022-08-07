@@ -1238,7 +1238,7 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
 
     if (needsLodWorkaround)
     {
-        bformata(glsl, "%sGrad%s(", funcName, offset);
+        bformata(glsl, "%sgrad%s(", funcName, offset);
     }
     else
     {
@@ -1248,9 +1248,9 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             ext = "EXT";
 
         if (ui32Flags & (TEXSMP_FLAG_LOD | TEXSMP_FLAG_FIRSTLOD) && !needsLodWorkaroundES2)
-            bformata(glsl, "%sLod%s%s(", funcName, ext, offset);
+            bformata(glsl, "%slod%s%s(", funcName, ext, offset);
         else if (ui32Flags & TEXSMP_FLAG_GRAD)
-            bformata(glsl, "%sGrad%s%s(", funcName, ext, offset);
+            bformata(glsl, "%sgrad%s%s(", funcName, ext, offset);
         else
             bformata(glsl, "%s%s%s(", funcName, ext, offset);
     }
