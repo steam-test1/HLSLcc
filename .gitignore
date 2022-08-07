@@ -39,3 +39,6 @@ Debug/
 *.cmake
 UpgradeLog.htm
 *.vs/
+
+# Test files
+test/*.dxbc

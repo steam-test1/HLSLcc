@@ -6,6 +6,9 @@
 #include <map>
 #include <algorithm>
 
+#define HLSLCC_DYNLIB 1
+#define libHLSLcc_EXPORTS 1
+
 #if defined(_WIN32) && defined(HLSLCC_DYNLIB)
     #define HLSLCC_APIENTRY __stdcall
     #if defined(libHLSLcc_EXPORTS)

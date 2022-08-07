@@ -2561,7 +2561,6 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 }
                 else
                 {
-                    // TODO(pema): These should prolly be static
                     if (psShader->psFloatTempSizes[i] != 0)
                         bformata(GetEarlyMain(psContext), "%s " HLSLCC_TEMP_PREFIX "%d;\n", HLSLcc::GetConstructorForType(psContext, SVT_FLOAT, psShader->psFloatTempSizes[i], usePrecision), i);
                     if (psShader->psFloat16TempSizes[i] != 0)
