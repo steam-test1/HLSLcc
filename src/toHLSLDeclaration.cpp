@@ -3880,10 +3880,7 @@ bool ToHLSL::TranslateSystemValue(const Operand *psOperand, const ShaderInfo::In
                 *pui32IgnoreSwizzle = 1;
             return true;
         case NAME_IS_FRONT_FACE:
-            if (HaveUnsignedTypes(psContext->psShader->eTargetLanguage))
-                result = "(gl_FrontFacing ? 0xffffffffu : uint(0))";    // Old ES3.0 Adrenos treat 0u as const int
-            else
-                result = "(gl_FrontFacing ? 1 : 0)";
+            result = "gl_FrontFacing";
             if (pui32IgnoreSwizzle)
                 *pui32IgnoreSwizzle = 1;
             return true;
