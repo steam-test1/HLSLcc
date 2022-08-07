@@ -1073,7 +1073,7 @@ bool ToHLSL::Translate()
             bcatcstr(glsl, ";\n");
         }
         psContext->indent--;
-        bcatcstr(glsl, "}\n\n");
+        bcatcstr(glsl, "};\n\n");
     }
 
     // Get entry point and info for preamble, declare input
