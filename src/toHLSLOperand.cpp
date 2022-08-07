@@ -632,7 +632,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
         if (((numComponents < requestedComponents) || (scalarWithSwizzle != 0)) && (hasCtor == 0))
         {
 //          ASSERT(numComponents == 1);
-            bformata(glsl, "%s(", GetConstructorForType(psContext, eType, requestedComponents, false));
+            bformata(glsl, "(%s)(", GetConstructorForType(psContext, eType, requestedComponents, false));
             numParenthesis++;
             hasCtor = 1;
         }
