@@ -51,218 +51,250 @@ static bool CheckConstantBuffersNoDuplicateNames(const std::vector<ConstantBuffe
     return true;
 }
 
-HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromMem(const char* shader,
-    unsigned int flags,
-    GLLang language,
-    const GlExtensions *extensions,
-    GLSLCrossDependencyData* dependencies,
-    HLSLccSamplerPrecisionInfo& samplerPrecisions,
-    HLSLccReflection& reflectionCallbacks,
-    GLSLShader* result)
+extern "C"
 {
-    uint32_t* tokens;
-    char* glslcstr = NULL;
-    int GLSLShaderType = GL_FRAGMENT_SHADER_ARB;
-    int success = 0;
-    uint32_t i;
-
-    tokens = (uint32_t*)shader;
-
-    std::auto_ptr<Shader> psShader(DecodeDXBC(tokens, flags));
-
-    if (psShader.get())
+    HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromMem(const char* shader,
+        unsigned int flags,
+        GLLang language,
+        const GlExtensions *extensions,
+        GLSLCrossDependencyData* dependencies,
+        HLSLccSamplerPrecisionInfo& samplerPrecisions,
+        HLSLccReflection& reflectionCallbacks,
+        GLSLShader* result)
     {
-        Shader* shader = psShader.get();
-        if (!CheckConstantBuffersNoDuplicateNames(shader->sInfo.psConstantBuffers, reflectionCallbacks))
-            return 0;
+        uint32_t* tokens;
+        char* glslcstr = NULL;
+        int GLSLShaderType = GL_FRAGMENT_SHADER_ARB;
+        int success = 0;
+        uint32_t i;
 
-        HLSLCrossCompilerContext sContext(reflectionCallbacks);
+        tokens = (uint32_t*)shader;
 
-        // Add shader precisions from the list
-        psShader->sInfo.AddSamplerPrecisions(samplerPrecisions);
+        std::auto_ptr<Shader> psShader(DecodeDXBC(tokens, flags));
 
-        if (psShader->ui32MajorVersion <= 3)
+        if (psShader.get())
         {
-            flags &= ~HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS;
-        }
-
-#ifdef _DEBUG
-        flags |= HLSLCC_FLAG_INCLUDE_INSTRUCTIONS_COMMENTS;
-#endif
-
-        sContext.psShader = shader;
-        sContext.flags = flags;
-
-        // If dependencies == NULL, we'll create a dummy object for it so that there's always something there.
-        std::auto_ptr<GLSLCrossDependencyData> depPtr(NULL);
-        if (dependencies == NULL)
-        {
-            depPtr.reset(new GLSLCrossDependencyData());
-            sContext.psDependencies = depPtr.get();
-            sContext.psDependencies->SetupGLSLResourceBindingSlotsIndices();
-        }
-        else
-            sContext.psDependencies = dependencies;
-
-        for (i = 0; i < psShader->asPhases.size(); ++i)
-        {
-            psShader->asPhases[i].hasPostShaderCode = 0;
-        }
-
-        if (language == LANG_METAL)
-        {
-            // Geometry shader is not supported
-            if (psShader->eShaderType == GEOMETRY_SHADER)
-            {
-                result->sourceCode = "";
+            Shader* shader = psShader.get();
+            if (!CheckConstantBuffersNoDuplicateNames(shader->sInfo.psConstantBuffers, reflectionCallbacks))
                 return 0;
-            }
-            ToMetal translator(&sContext);
-            if (!translator.Translate())
+
+            HLSLCrossCompilerContext sContext(reflectionCallbacks);
+
+            // Add shader precisions from the list
+            psShader->sInfo.AddSamplerPrecisions(samplerPrecisions);
+
+            if (psShader->ui32MajorVersion <= 3)
             {
-                bdestroy(sContext.glsl);
-                for (i = 0; i < psShader->asPhases.size(); ++i)
+                flags &= ~HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS;
+            }
+
+    #ifdef _DEBUG
+            flags |= HLSLCC_FLAG_INCLUDE_INSTRUCTIONS_COMMENTS;
+    #endif
+
+            sContext.psShader = shader;
+            sContext.flags = flags;
+
+            // If dependencies == NULL, we'll create a dummy object for it so that there's always something there.
+            std::auto_ptr<GLSLCrossDependencyData> depPtr(NULL);
+            if (dependencies == NULL)
+            {
+                depPtr.reset(new GLSLCrossDependencyData());
+                sContext.psDependencies = depPtr.get();
+                sContext.psDependencies->SetupGLSLResourceBindingSlotsIndices();
+            }
+            else
+                sContext.psDependencies = dependencies;
+
+            for (i = 0; i < psShader->asPhases.size(); ++i)
+            {
+                psShader->asPhases[i].hasPostShaderCode = 0;
+            }
+
+            if (language == LANG_METAL)
+            {
+                // Geometry shader is not supported
+                if (psShader->eShaderType == GEOMETRY_SHADER)
                 {
-                    bdestroy(psShader->asPhases[i].postShaderCode);
-                    bdestroy(psShader->asPhases[i].earlyMain);
+                    result->sourceCode = "";
+                    return 0;
                 }
-
-                return 0;
-            }
-        }
-        else if (language == LANG_HLSL)
-        {
-            ToHLSL translator(&sContext);
-            language = translator.SetLanguage(language);
-            translator.SetExtensions(extensions);
-            if (!translator.Translate())
-            {
-                bdestroy(sContext.glsl);
-                for (i = 0; i < psShader->asPhases.size(); ++i)
+                ToMetal translator(&sContext);
+                if (!translator.Translate())
                 {
-                    bdestroy(psShader->asPhases[i].postShaderCode);
-                    bdestroy(psShader->asPhases[i].earlyMain);
-                }
+                    bdestroy(sContext.glsl);
+                    for (i = 0; i < psShader->asPhases.size(); ++i)
+                    {
+                        bdestroy(psShader->asPhases[i].postShaderCode);
+                        bdestroy(psShader->asPhases[i].earlyMain);
+                    }
 
-                return 0;
+                    return 0;
+                }
             }
-        }
-        else
-        {
-            ToGLSL translator(&sContext);
-            language = translator.SetLanguage(language);
-            translator.SetExtensions(extensions);
-            if (!translator.Translate())
+            else if (language == LANG_HLSL)
             {
-                bdestroy(sContext.glsl);
-                for (i = 0; i < psShader->asPhases.size(); ++i)
+                ToHLSL translator(&sContext);
+                language = translator.SetLanguage(language);
+                translator.SetExtensions(extensions);
+                if (!translator.Translate())
                 {
-                    bdestroy(psShader->asPhases[i].postShaderCode);
-                    bdestroy(psShader->asPhases[i].earlyMain);
+                    bdestroy(sContext.glsl);
+                    for (i = 0; i < psShader->asPhases.size(); ++i)
+                    {
+                        bdestroy(psShader->asPhases[i].postShaderCode);
+                        bdestroy(psShader->asPhases[i].earlyMain);
+                    }
+
+                    return 0;
                 }
-
-                return 0;
             }
+            else
+            {
+                ToGLSL translator(&sContext);
+                language = translator.SetLanguage(language);
+                translator.SetExtensions(extensions);
+                if (!translator.Translate())
+                {
+                    bdestroy(sContext.glsl);
+                    for (i = 0; i < psShader->asPhases.size(); ++i)
+                    {
+                        bdestroy(psShader->asPhases[i].postShaderCode);
+                        bdestroy(psShader->asPhases[i].earlyMain);
+                    }
+
+                    return 0;
+                }
+            }
+
+            switch (psShader->eShaderType)
+            {
+                case VERTEX_SHADER:
+                {
+                    GLSLShaderType = GL_VERTEX_SHADER_ARB;
+                    break;
+                }
+                case GEOMETRY_SHADER:
+                {
+                    GLSLShaderType = GL_GEOMETRY_SHADER;
+                    break;
+                }
+                case DOMAIN_SHADER:
+                {
+                    GLSLShaderType = GL_TESS_EVALUATION_SHADER;
+                    break;
+                }
+                case HULL_SHADER:
+                {
+                    GLSLShaderType = GL_TESS_CONTROL_SHADER;
+                    break;
+                }
+                case COMPUTE_SHADER:
+                {
+                    GLSLShaderType = GL_COMPUTE_SHADER;
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+            }
+
+            glslcstr = bstr2cstr(sContext.glsl, '\0');
+            result->sourceCode = glslcstr;
+            bcstrfree(glslcstr);
+
+            bdestroy(sContext.glsl);
+            for (i = 0; i < psShader->asPhases.size(); ++i)
+            {
+                bdestroy(psShader->asPhases[i].postShaderCode);
+                bdestroy(psShader->asPhases[i].earlyMain);
+            }
+
+            result->reflection = psShader->sInfo;
+
+            result->textureSamplers = psShader->textureSamplers;
+
+            success = 1;
         }
 
-        switch (psShader->eShaderType)
-        {
-            case VERTEX_SHADER:
-            {
-                GLSLShaderType = GL_VERTEX_SHADER_ARB;
-                break;
-            }
-            case GEOMETRY_SHADER:
-            {
-                GLSLShaderType = GL_GEOMETRY_SHADER;
-                break;
-            }
-            case DOMAIN_SHADER:
-            {
-                GLSLShaderType = GL_TESS_EVALUATION_SHADER;
-                break;
-            }
-            case HULL_SHADER:
-            {
-                GLSLShaderType = GL_TESS_CONTROL_SHADER;
-                break;
-            }
-            case COMPUTE_SHADER:
-            {
-                GLSLShaderType = GL_COMPUTE_SHADER;
-                break;
-            }
-            default:
-            {
-                break;
-            }
-        }
+        shader = 0;
+        tokens = 0;
 
-        glslcstr = bstr2cstr(sContext.glsl, '\0');
-        result->sourceCode = glslcstr;
-        bcstrfree(glslcstr);
+        /* Fill in the result struct */
 
-        bdestroy(sContext.glsl);
-        for (i = 0; i < psShader->asPhases.size(); ++i)
-        {
-            bdestroy(psShader->asPhases[i].postShaderCode);
-            bdestroy(psShader->asPhases[i].earlyMain);
-        }
+        result->shaderType = GLSLShaderType;
+        result->GLSLLanguage = language;
 
-        result->reflection = psShader->sInfo;
-
-        result->textureSamplers = psShader->textureSamplers;
-
-        success = 1;
+        return success;
     }
 
-    shader = 0;
-    tokens = 0;
-
-    /* Fill in the result struct */
-
-    result->shaderType = GLSLShaderType;
-    result->GLSLLanguage = language;
-
-    return success;
-}
-
-HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromFile(const char* filename,
-    unsigned int flags,
-    GLLang language,
-    const GlExtensions *extensions,
-    GLSLCrossDependencyData* dependencies,
-    HLSLccSamplerPrecisionInfo& samplerPrecisions,
-    HLSLccReflection& reflectionCallbacks,
-    GLSLShader* result)
-{
-    FILE* shaderFile;
-    int length;
-    size_t readLength;
-    std::vector<char> shader;
-    int success = 0;
-
-    shaderFile = fopen(filename, "rb");
-
-    if (!shaderFile)
+    HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromFile(const char* filename,
+        unsigned int flags,
+        GLLang language,
+        const GlExtensions *extensions,
+        GLSLCrossDependencyData* dependencies,
+        HLSLccSamplerPrecisionInfo& samplerPrecisions,
+        HLSLccReflection& reflectionCallbacks,
+        GLSLShader* result)
     {
+        FILE* shaderFile;
+        int length;
+        size_t readLength;
+        std::vector<char> shader;
+        int success = 0;
+
+        shaderFile = fopen(filename, "rb");
+
+        if (!shaderFile)
+        {
+            return 0;
+        }
+
+        fseek(shaderFile, 0, SEEK_END);
+        length = ftell(shaderFile);
+        fseek(shaderFile, 0, SEEK_SET);
+
+        shader.resize(length + 1);
+
+        readLength = fread(&shader[0], 1, length, shaderFile);
+
+        fclose(shaderFile);
+        shaderFile = 0;
+
+        shader[readLength] = '\0';
+
+        success = TranslateHLSLFromMem(&shader[0], flags, language, extensions, dependencies, samplerPrecisions, reflectionCallbacks, result);
+
+        return success;
+    }
+
+    HLSLCC_API int HLSLCC_APIENTRY
+    TranslateHLSLFromMemSourceOnly(const char *shader, GLLang lang, const char **ppResultSource) {
+        unsigned int flags = HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT;
+
+        GlExtensions ext;
+        ext.ARB_explicit_attrib_location = 1;
+        ext.ARB_explicit_uniform_location = 1;
+        ext.ARB_shading_language_420pack = 0;
+        ext.OVR_multiview = 0;
+        ext.EXT_shader_framebuffer_fetch = 0;
+
+        HLSLccSamplerPrecisionInfo info;
+        HLSLccReflection reflection;
+        GLSLShader result;
+
+        int success = TranslateHLSLFromMem(shader, 0, lang, &ext, nullptr, info, reflection, &result);
+
+        if (success) {
+            *ppResultSource = strdup(result.sourceCode.c_str());
+        }
+
+        return success;
+    }
+
+    HLSLCC_API int HLSLCC_APIENTRY FreeString(const char *str) {
+        free((void *) str);
         return 0;
     }
-
-    fseek(shaderFile, 0, SEEK_END);
-    length = ftell(shaderFile);
-    fseek(shaderFile, 0, SEEK_SET);
-
-    shader.resize(length + 1);
-
-    readLength = fread(&shader[0], 1, length, shaderFile);
-
-    fclose(shaderFile);
-    shaderFile = 0;
-
-    shader[readLength] = '\0';
-
-    success = TranslateHLSLFromMem(&shader[0], flags, language, extensions, dependencies, samplerPrecisions, reflectionCallbacks, result);
-
-    return success;
 }

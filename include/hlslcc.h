@@ -813,6 +813,9 @@ HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromMem(const char* shader,
     HLSLccReflection& reflectionCallbacks,
     GLSLShader* result);
 
+HLSLCC_API int HLSLCC_APIENTRY TranslateHLSLFromMemSourceOnly(const char* shader, GLLang lang, const char** ppResultSource);
+HLSLCC_API int HLSLCC_APIENTRY FreeString(const char* str);
+
 #ifdef __cplusplus
 }
 #endif
