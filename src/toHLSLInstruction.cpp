@@ -1278,6 +1278,9 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     }
     bcatcstr(glsl, ", ");
 
+    if ((ui32Flags & TEXSMP_FLAG_LOD) && !needsLodWorkaround)
+        bcatcstr(glsl, "float4(");
+
     // Texture coordinates, either from previously constructed temp
     // or straight from the psDestAddr operand
     if ((ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) &&
@@ -1304,11 +1307,12 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     {
         if (!needsLodWorkaroundES2)
         {
-            bcatcstr(glsl, ", ");
+            bcatcstr(glsl, ", 0.0,");
             TranslateOperand(psSrcLOD, TO_AUTO_BITCAST_TO_FLOAT);
+            bcatcstr(glsl, ")");
             if (psContext->psShader->ui32MajorVersion < 4)
             {
-                bcatcstr(glsl, ".w");
+                bcatcstr(glsl, ".w"); // TODO(pema): Wat dis
             }
         }
     }
