@@ -72,7 +72,7 @@ void ToHLSL::AddOpAssignToDestWithMask(const Operand* psDest,
         // eg. MOV r0, c0.x => Temp[0] = vec4(c0.x);
         if (ui32DestElementCount > ui32SrcElementCount)
         {
-            bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eDestDataType, ui32DestElementCount, false));
+            bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eDestDataType, ui32DestElementCount));
             (*pNeedsParenthesis)++;
         }
 
@@ -88,16 +88,16 @@ void ToHLSL::AddOpAssignToDestWithMask(const Operand* psDest,
             ASSERT(eSrcType != SVT_FLOAT10 && eSrcType != SVT_FLOAT16);
             if (eSrcType == SVT_FLOAT && psContext->psShader->ui32MajorVersion > 3 && HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
             {
-                bcatcstr(glsl, "floatBitsToInt(");
+                bcatcstr(glsl, "asint(");
                 // Cover cases where the HLSL language expects the rest of the components to be default-filled
                 if (ui32DestElementCount > ui32SrcElementCount)
                 {
-                    bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eSrcType, ui32DestElementCount, false));
+                    bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eSrcType, ui32DestElementCount));
                     (*pNeedsParenthesis)++;
                 }
             }
             else
-                bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eDestDataType, ui32DestElementCount, false));
+                bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eDestDataType, ui32DestElementCount));
 
             (*pNeedsParenthesis)++;
             break;
@@ -106,16 +106,16 @@ void ToHLSL::AddOpAssignToDestWithMask(const Operand* psDest,
             ASSERT(eSrcType != SVT_FLOAT10 && eSrcType != SVT_FLOAT16);
             if (eSrcType == SVT_FLOAT && psContext->psShader->ui32MajorVersion > 3 && HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
             {
-                bcatcstr(glsl, "floatBitsToUint(");
+                bcatcstr(glsl, "asuint(");
                 // Cover cases where the HLSL language expects the rest of the components to be default-filled
                 if (ui32DestElementCount > ui32SrcElementCount)
                 {
-                    bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eSrcType, ui32DestElementCount, false));
+                    bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eSrcType, ui32DestElementCount));
                     (*pNeedsParenthesis)++;
                 }
             }
             else
-                bformata(glsl, " %s(", GetConstructorForTypeGLSL(psContext, eDestDataType, ui32DestElementCount, false));
+                bformata(glsl, " (%s)(", GetConstructorForTypeHLSL(eDestDataType, ui32DestElementCount));
 
             (*pNeedsParenthesis)++;
             break;
@@ -133,17 +133,17 @@ void ToHLSL::AddOpAssignToDestWithMask(const Operand* psDest,
                 // Cover cases where the HLSL language expects the rest of the components to be default-filled
                 if (ui32DestElementCount > ui32SrcElementCount)
                 {
-                    bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eSrcType, ui32DestElementCount, false));
+                    bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eSrcType, ui32DestElementCount));
                     (*pNeedsParenthesis)++;
                 }
             }
             else
-                bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, eDestDataType, ui32DestElementCount, false));
+                bformata(glsl, "(%s)(", GetConstructorForTypeHLSL(eDestDataType, ui32DestElementCount));
 
             (*pNeedsParenthesis)++;
             break;
         case SVT_BOOL:
-            bformata(glsl, " %s(", GetConstructorForTypeGLSL(psContext, eDestDataType, ui32DestElementCount, false));
+            bformata(glsl, " (%s)(", GetConstructorForTypeHLSL(eDestDataType, ui32DestElementCount));
             (*pNeedsParenthesis)++;
             break;
         default:
@@ -223,7 +223,7 @@ void ToHLSL::AddComparison(Instruction* psInst, ComparisonType eType,
         {
             AddAssignToDest(&psInst->asOperands[0], floatResult ? SVT_FLOAT : SVT_UINT, destElemCount, psInst->ui32PreciseMask, &needsParenthesis);
 
-            bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, floatResult ? SVT_FLOAT : SVT_UINT, destElemCount, false));
+            bcatcstr(glsl, GetConstructorForTypeHLSL(floatResult ? SVT_FLOAT : SVT_UINT, destElemCount));
             bcatcstr(glsl, "(");
         }
         bcatcstr(glsl, "(("); // TODO(pema): Figure out the whole needsParanthesis shit here
@@ -558,7 +558,7 @@ void ToHLSL::CallBinaryOp(const char* name, Instruction* psInst,
     {
         uint32_t i;
         int firstPrinted = 0;
-        bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, eDataType, dstSwizCount, false));
+        bcatcstr(glsl, GetConstructorForTypeHLSL(eDataType, dstSwizCount));
         bcatcstr(glsl, "(");
         for (i = 0; i < 4; i++)
         {
@@ -1566,7 +1566,7 @@ void ToHLSL::TranslateShaderStorageLoad(Instruction* psInst)
     AddAssignToDest(psDest, destDataType, destCount, psInst->ui32PreciseMask, &numParenthesis); //TODO check this out?
     if (destCount > 1 || destDataType == SVT_FLOAT16)
     {
-        bformata(glsl, "%s(", GetConstructorForTypeGLSL(psContext, destDataType, destCount, false));
+        bformata(glsl, "%s(", GetConstructorForTypeHLSL(destDataType, destCount));
         numParenthesis++;
     }
     for (component = 0; component < 4; component++)
@@ -2218,7 +2218,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
             psContext->AddIndentation();
 
             AddAssignToDest(&psInst->asOperands[0], castType, srcCount, psInst->ui32PreciseMask, &numParenthesis);
-            bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, castType, dstCount, false));
+            bcatcstr(glsl, GetConstructorForTypeHLSL(castType, dstCount));
             bcatcstr(glsl, "(");             // 1
             TranslateOperand(&psInst->asOperands[1], TO_AUTO_BITCAST_TO_FLOAT, psInst->asOperands[0].GetAccessMask());
             bcatcstr(glsl, ")");             // 1
@@ -2304,7 +2304,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
 
             psContext->AddIndentation();
             AddAssignToDest(&psInst->asOperands[0], castType, srcCount, psInst->ui32PreciseMask, &numParenthesis);
-            bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, castType, dstCount, false));
+            bcatcstr(glsl, GetConstructorForTypeHLSL(castType, dstCount));
             bcatcstr(glsl, "(");              // 1
             TranslateOperand(&psInst->asOperands[1], psInst->eOpcode == OPCODE_UTOF ? TO_AUTO_BITCAST_TO_UINT : TO_AUTO_BITCAST_TO_INT, psInst->asOperands[0].GetAccessMask());
             bcatcstr(glsl, ")");              // 1
@@ -2516,7 +2516,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                     TranslateOperand(&psInst->asOperands[otherOp], ui32Flags, destMask);
                     bcatcstr(glsl, " : ");
 
-                    bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, eDataType, dstSwizCount, false));
+                    bcatcstr(glsl, GetConstructorForTypeHLSL(eDataType, dstSwizCount));
                     bcatcstr(glsl, "(");
                     switch (eDataType)
                     {
@@ -2550,7 +2550,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                         bcatcstr(glsl, " ? ");
                         TranslateOperand(&psInst->asOperands[otherOp], ui32Flags, destMask);
                         bcatcstr(glsl, " : ");
-                        bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, eDataType, dstSwizCount, false));
+                        bcatcstr(glsl, GetConstructorForTypeHLSL(eDataType, dstSwizCount));
                         bcatcstr(glsl, "(");
                         for (i = 0; i < dstSwizCount; i++)
                         {
@@ -2601,7 +2601,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                         bcatcstr(glsl, "op_and");
                     }
                     bcatcstr(glsl, "(");
-                    bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, SVT_UINT, dstSwizCount, false));
+                    bcatcstr(glsl, GetConstructorForTypeHLSL(SVT_UINT, dstSwizCount));
                     bcatcstr(glsl, "(");
                     TranslateOperand(&psInst->asOperands[boolOp], TO_FLAG_BOOL, destMask);
                     if (HaveUnsignedTypes(psContext->psShader->eTargetLanguage))
@@ -2971,9 +2971,9 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 bcatcstr(glsl, "//ROUND_NE\n");
             }
             if (psContext->psShader->eTargetLanguage == LANG_ES_100)
-                UseExtraFunctionDependency("roundEven");
+                UseExtraFunctionDependency("round");
 
-            CallHelper1("roundEven", psInst, 0, 1, 1);
+            CallHelper1("round", psInst, 0, 1, 1);
             break;
         }
         case OPCODE_FRC:
@@ -4437,9 +4437,9 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
             }
             psContext->AddIndentation();
             AddAssignToDest(&psInst->asOperands[0], SVT_FLOAT, srcElemCount, psInst->ui32PreciseMask, &numParenthesis);
-            bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, SVT_FLOAT, destElemCount, false));
+            bcatcstr(glsl, GetConstructorForTypeHLSL(SVT_FLOAT, destElemCount));
             bcatcstr(glsl, "(1.0) / ");
-            bcatcstr(glsl, GetConstructorForTypeGLSL(psContext, SVT_FLOAT, destElemCount, false));
+            bcatcstr(glsl, GetConstructorForTypeHLSL(SVT_FLOAT, destElemCount));
             bcatcstr(glsl, "(");
             numParenthesis++;
             TranslateOperand(&psInst->asOperands[1], TO_FLAG_NONE, psInst->asOperands[0].GetAccessMask());

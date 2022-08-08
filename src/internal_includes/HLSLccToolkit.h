@@ -25,6 +25,8 @@ namespace HLSLcc
 
     const char * GetConstructorForTypeMetal(const SHADER_VARIABLE_TYPE eType, const int components);
 
+    const char* GetConstructorForTypeHLSL(const SHADER_VARIABLE_TYPE eType, const int components);
+
     std::string GetMatrixTypeName(const HLSLCrossCompilerContext *psContext, const SHADER_VARIABLE_TYPE eBaseType, const int columns, const int rows);
 
     void AddSwizzleUsingElementCount(bstring dest, uint32_t count);
