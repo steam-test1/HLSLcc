@@ -1076,6 +1076,14 @@ bool ToHLSL::Translate()
         bcatcstr(glsl, "};\n\n");
     }
 
+    // Get function inputs
+    std::string funInputs = "";
+    for (auto it = m_StructDefinitions[""].m_Members.begin(); it != m_StructDefinitions[""].m_Members.end(); ++it)
+    {
+        funInputs += ", ";
+        funInputs += it->second;
+    }
+    
     // Get entry point and info for preamble, declare input
     char* entryPointName;
     char* stageName;
@@ -1128,7 +1136,7 @@ bool ToHLSL::Translate()
     bformata(glsl, "#pragma %s %s\n", stageNameLower.c_str(), entryPointName);
 
     // Entry point
-    bformata(glsl, "%s %s(%s_INPUT %s)\n{\n", GetOutputStructName().c_str(), entryPointName, stageName, GetInputStructVariableName().c_str());
+    bformata(glsl, "%s %s(%s_INPUT %s%s)\n{\n", GetOutputStructName().c_str(), entryPointName, stageName, GetInputStructVariableName().c_str(), funInputs.c_str());
 
     // Declare output struct variable
     psContext->indent++;

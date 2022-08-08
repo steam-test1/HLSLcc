@@ -630,4 +630,18 @@ namespace HLSLcc
 
         return *str;
     }
+
+    bool IsSpecialSystemValueInput(SPECIAL_NAME name)
+    {
+        switch (name)
+        {
+        case NAME_VERTEX_ID:
+        case NAME_PRIMITIVE_ID:
+        case NAME_INSTANCE_ID:
+        case NAME_IS_FRONT_FACE:
+            return true;
+        default:
+            return false;
+        }
+    }
 }

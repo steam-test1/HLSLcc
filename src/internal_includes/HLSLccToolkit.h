@@ -70,6 +70,9 @@ namespace HLSLcc
     bstring GetEarlyMain(HLSLCrossCompilerContext *psContext);
     bstring GetPostShaderCode(HLSLCrossCompilerContext *psContext);
 
+    // Things that can't be put in the input struct because they aren't passed from the previous stage
+    bool IsSpecialSystemValueInput(SPECIAL_NAME name);
+
     // Flags for ForeachOperand
     // Process suboperands
 #define FEO_FLAG_SUBOPERAND 1

@@ -742,8 +742,13 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                         }
                         else
                         {
+                            const ShaderInfo::InOutSignature* psSig = NULL;
+                            psContext->psShader->sInfo.GetInputSignatureFromRegister(psOperand->ui32RegisterNumber, psOperand->ui32CompMask, &psSig);
+
+                            // Only add struct accessor if this is actually in a struct
                             std::string name = psContext->GetDeclaredInputName(psOperand, piRebase, 0, pui32IgnoreSwizzle);
-                            bformata(glsl, "%s.", GetInputStructVariableName().c_str());
+                            if (!IsSpecialSystemValueInput(psSig->eSystemValueType))
+                                bformata(glsl, "%s.", GetInputStructVariableName().c_str());
 
                             // Rewrite the variable name if we're using framebuffer fetch
                             if (psContext->psShader->extensions->EXT_shader_framebuffer_fetch &&
