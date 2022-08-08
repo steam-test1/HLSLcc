@@ -1072,6 +1072,22 @@ bool ToHLSL::Translate()
             bcatcstr(glsl, it->second.c_str());
             bcatcstr(glsl, ";\n");
         }
+
+        // INFO(SPSI): Inject vertex instance IDs
+        if (psShader->eShaderType == VERTEX_SHADER)
+        {
+            if (mem->first == GetOutputStructName())
+            {
+                psContext->AddIndentation();
+                bcatcstr(glsl, "UNITY_VERTEX_OUTPUT_STEREO\n");
+            }
+            else if (mem->first == GetInputStructName())
+            {
+                psContext->AddIndentation();
+                bcatcstr(glsl, "UNITY_VERTEX_INPUT_INSTANCE_ID\n");
+            }
+        }
+
         psContext->indent--;
         bcatcstr(glsl, "};\n\n");
     }
@@ -1142,6 +1158,22 @@ bool ToHLSL::Translate()
     psContext->indent++;
     psContext->AddIndentation();
     bformata(glsl, "%s %s = (%s)0;\n", GetOutputStructName().c_str(), GetOutputStructVariableName().c_str(), GetOutputStructName().c_str());
+
+    // INFO(SPSI): Inject vertex instance ID setup
+    if (psShader->eShaderType == VERTEX_SHADER)
+    {
+        psContext->AddIndentation();
+        bformata(glsl, "UNITY_SETUP_INSTANCE_ID(%s);\n", GetInputStructVariableName().c_str());
+        psContext->AddIndentation();
+        bformata(glsl, "UNITY_INITIALIZE_OUTPUT(%s, %s);\n", GetOutputStructName().c_str(), GetOutputStructVariableName().c_str());
+        psContext->AddIndentation();
+        bformata(glsl, "UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(%s);\n", GetOutputStructVariableName().c_str());
+    }
+    else if (psShader->eShaderType == PIXEL_SHADER)
+    {
+        psContext->AddIndentation();
+        bformata(glsl, "UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(%s);\n", GetInputStructVariableName().c_str());
+    }
 
     // Do early main
     if (psContext->psShader->asPhases[0].earlyMain->slen > 1)
