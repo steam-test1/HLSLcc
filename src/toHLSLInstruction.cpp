@@ -206,10 +206,10 @@ void ToHLSL::AddComparison(Instruction* psInst, ComparisonType eType,
     if (destElemCount > 1)
     {
         const char* glslOpcode[] = {
-            "==",
-            "<",
-            ">=",
-            "!=",
+            "equal",
+            "lessThan",
+            "greaterThanEqual",
+            "notEqual",
         };
 
         int needsParenthesis = 0;
@@ -226,11 +226,11 @@ void ToHLSL::AddComparison(Instruction* psInst, ComparisonType eType,
             bcatcstr(glsl, GetConstructorForTypeHLSL(floatResult ? SVT_FLOAT : SVT_UINT, destElemCount));
             bcatcstr(glsl, "(");
         }
-        bcatcstr(glsl, "(("); // TODO(pema): Figure out the whole needsParanthesis shit here
+        bformata(glsl, "%s(", glslOpcode[eType]);
         TranslateOperand(&psInst->asOperands[1], typeFlag);
-        bformata(glsl, ") %s (", glslOpcode[eType]);
+        bcatcstr(glsl, ", ");
         TranslateOperand(&psInst->asOperands[2], typeFlag);
-        bcatcstr(glsl, "))");
+        bcatcstr(glsl, ")");
         TranslateOperandSwizzleHLSL(psContext, &psInst->asOperands[0], 0);
         if (!isBoolDest)
         {

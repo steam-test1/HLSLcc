@@ -1084,22 +1084,37 @@ bool ToHLSL::Translate()
         case VERTEX_SHADER:
             entryPointName = "vert";
             stageName = "VERTEX";
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetInputStructName().c_str());
             break;
         case PIXEL_SHADER:
             entryPointName = "frag";
             stageName = "FRAGMENT";
+            bcatcstr(glsl, "#if STAGE_GEOMETRY\n");
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(GEOMETRY_SHADER).c_str());
+            bcatcstr(glsl, "#elif STAGE_DOMAIN\n");
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(DOMAIN_SHADER).c_str());
+            bcatcstr(glsl, "#else\n");
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(VERTEX_SHADER).c_str());
+            bcatcstr(glsl, "#endif\n");
             break;
         case GEOMETRY_SHADER:
             entryPointName = "geom";
             stageName = "GEOMETRY";
+            bcatcstr(glsl, "#if STAGE_DOMAIN\n");
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(DOMAIN_SHADER).c_str());
+            bcatcstr(glsl, "#else\n");
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(VERTEX_SHADER).c_str());
+            bcatcstr(glsl, "#endif\n");
             break;
         case HULL_SHADER:
             entryPointName = "hull";
             stageName = "HULL";
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(VERTEX_SHADER).c_str());
             break;
         case DOMAIN_SHADER:
             entryPointName = "dom";
             stageName = "DOMAIN";
+            bformata(glsl, "#define %s_INPUT %s\n", stageName, GetOutputStructNameForType(HULL_SHADER).c_str());
             break;
         default:
             ASSERT(0);
@@ -1113,7 +1128,7 @@ bool ToHLSL::Translate()
     bformata(glsl, "#pragma %s %s\n", stageNameLower.c_str(), entryPointName);
 
     // Entry point
-    bformata(glsl, "%s %s(%s %s)\n{\n", GetOutputStructName().c_str(), entryPointName, GetInputStructName().c_str(), GetInputStructVariableName().c_str());
+    bformata(glsl, "%s %s(%s_INPUT %s)\n{\n", GetOutputStructName().c_str(), entryPointName, stageName, GetInputStructVariableName().c_str());
 
     // Declare output struct variable
     psContext->indent++;
