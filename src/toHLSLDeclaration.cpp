@@ -2316,11 +2316,16 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                     psDecl->asOperands[0].ui32RegisterNumber,
                     psDecl->asOperands[0].ui32CompMask,
                     psShader->ui32CurrentVertexOutputStream,
-                    &psSignature);
+                    &psSignature, true);
             else
                 psShader->sInfo.GetInputSignatureFromRegister(psDecl->asOperands[0].ui32RegisterNumber,
                     psDecl->asOperands[0].ui32CompMask,
-                    &psSignature);
+                    &psSignature, true);
+
+            // TODO(pema): Hack. For cases where register apparently can't find it
+            if (!psSignature)
+                psShader->sInfo.GetInputSignatureFromOperandType(psDecl->asOperands[0].eType, &psSignature);
+
             int iNumComponents = HLSLcc::GetNumberBitsSet(psSignature->ui32Mask);
 
             std::string type;

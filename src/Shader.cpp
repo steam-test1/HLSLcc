@@ -231,17 +231,16 @@ static void GatherOperandAccessMasks(const Operand *psOperand, char *destTable)
 // Coalesce the split temps back based on their original temp register. Keep uint/int/float operations separate
 static void CoalesceTemps(Shader *psShader, ShaderPhase *psPhase, uint32_t ui32MaxOrigTemps)
 {
+    if (psPhase->psInst.size() == 0 || psPhase->ui32OrigTemps == 0)
+        return;
+
     // Just move all operations back to their original registers, but keep the data type assignments.
     uint32_t i, k;
     Instruction *psLastInstruction = &psPhase->psInst[psPhase->psInst.size() - 1];
     std::vector<char> opAccessMasks;
 
     // First move all newly created temps to high enough so they won't overlap with the rebased ones
-
     Instruction *inst = &psPhase->psInst[0];
-
-    if (psPhase->psInst.size() == 0 || psPhase->ui32OrigTemps == 0)
-        return;
 
     while (inst <= psLastInstruction)
     {

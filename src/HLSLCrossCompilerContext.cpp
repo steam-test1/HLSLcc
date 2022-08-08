@@ -194,6 +194,10 @@ std::string HLSLCrossCompilerContext::GetDeclaredInputName(const Operand* psOper
     else
         psShader->sInfo.GetPatchConstantSignatureFromRegister(psOperand->ui32RegisterNumber, psOperand->GetAccessMask(), &psIn, true);
 
+    // TODO(pema): Hack
+    if (!psIn)
+        psShader->sInfo.GetInputSignatureFromOperandType(psOperand->eType, &psIn);
+
     if (psIn && piRebase)
         *piRebase = psIn->iRebase;
 

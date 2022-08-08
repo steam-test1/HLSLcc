@@ -76,6 +76,24 @@ int ShaderInfo::GetInputSignatureFromRegister(const uint32_t ui32Register, const
     return 0;
 }
 
+// TODO(pema): This is a hack. Idk why registers dont match sometimes.
+int ShaderInfo::GetInputSignatureFromOperandType(const OPERAND_TYPE type, const InOutSignature** ppsOut) const
+{
+    size_t i;
+    const size_t ui32NumVars = psInputSignatures.size();
+
+    for (i = 0; i < ui32NumVars; ++i)
+    {
+        if ((type == OPERAND_TYPE_INPUT_PRIMITIVEID && psInputSignatures[i].eSystemValueType == NAME_PRIMITIVE_ID) ||
+            (type == OPERAND_TYPE_INPUT_GS_INSTANCE_ID &&  psInputSignatures[i].eSystemValueType == NAME_INSTANCE_ID))
+        {
+            *ppsOut = &psInputSignatures[i];
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int ShaderInfo::GetPatchConstantSignatureFromRegister(const uint32_t ui32Register, const uint32_t ui32Mask, const InOutSignature** ppsOut, bool allowNull /* == false */) const
 {
     size_t i;
