@@ -127,9 +127,9 @@ void ToHLSL::AddOpAssignToDestWithMask(const Operand* psDest,
             if (psContext->psShader->ui32MajorVersion > 3 && HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
             {
                 if (eSrcType == SVT_INT)
-                    bcatcstr(glsl, "intBitsToFloat(");
+                    bcatcstr(glsl, "asfloat(");
                 else
-                    bcatcstr(glsl, "uintBitsToFloat(");
+                    bcatcstr(glsl, "asfloat(");
                 // Cover cases where the HLSL language expects the rest of the components to be default-filled
                 if (ui32DestElementCount > ui32SrcElementCount)
                 {
@@ -1588,7 +1588,7 @@ void ToHLSL::TranslateShaderStorageLoad(Instruction* psInst)
         if (destDataType == SVT_FLOAT)
         {
             if (HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
-                bcatcstr(glsl, "uintBitsToFloat(");
+                bcatcstr(glsl, "asfloat(");
             else
                 bcatcstr(glsl, "float(");
             addedBitcast = 1;

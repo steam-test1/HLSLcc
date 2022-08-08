@@ -1826,12 +1826,12 @@ void ToHLSL::HandleInputRedirect(const Declaration *psDecl, const char *Precisio
                     numComps = GetNumberBitsSet(psSig->ui32Mask);
                     if (psSig->eComponentType == INOUT_COMPONENT_SINT32)
                     {
-                        bformata(str, HaveBitEncodingOps(psContext->psShader->eTargetLanguage) ? "intBitsToFloat(" : "float(");
+                        bformata(str, HaveBitEncodingOps(psContext->psShader->eTargetLanguage) ? "asfloat(" : "float(");
                         hasCast = 1;
                     }
                     else if (psSig->eComponentType == INOUT_COMPONENT_UINT32)
                     {
-                        bformata(str, HaveBitEncodingOps(psContext->psShader->eTargetLanguage) ? "uintBitsToFloat(" : "float(");
+                        bformata(str, HaveBitEncodingOps(psContext->psShader->eTargetLanguage) ? "asfloat(" : "float(");
                         hasCast = 1;
                     }
 
@@ -2332,8 +2332,8 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             std::string append = (iNumComponents > 1 ? std::to_string(iNumComponents) : "");
             switch (psSignature->eComponentType)
             {
-                case INOUT_COMPONENT_UINT32: type = "uint" + append; break;
-                case INOUT_COMPONENT_SINT32: type = "int" + append; break;
+                case INOUT_COMPONENT_UINT32:  type = "uint" + append; break;
+                case INOUT_COMPONENT_SINT32:  type = "int" + append; break;
                 case INOUT_COMPONENT_FLOAT32: type = "float" + append; break;
                 default: ASSERT(0); break;
             }
@@ -2347,9 +2347,28 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             else
                 structName = GetInputStructName();
 
+            // Special exceptions for semantics
+            std::string semantic = psSignature->semanticName + std::to_string(psSignature->ui32SemanticIndex);
+            if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH)
+            {
+                type = "float";
+                semantic = "SV_Depth";
+            }
+            else if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH_LESS_EQUAL)
+            {
+                type = "float";
+                semantic = "SV_DepthLessEqual";
+            }
+            else if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH_GREATER_EQUAL)
+            {
+                type = "float";
+                semantic = "SV_DepthGreaterEqual";
+            }
+
+            // Make declaration
             m_StructDefinitions[structName].m_Members.push_back(std::make_pair(
                 inputName,
-                type + " " + inputName + " : " + psSignature->semanticName + std::to_string(psSignature->ui32SemanticIndex)
+                type + " " + inputName + " : " + semantic
             ));
             break;
 
@@ -3171,7 +3190,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                             };
                             bformata(tgt, "\tImmCB_%d_%d_%d[%d] = ", psContext->currentPhase, chunk.first, chunk.second.m_Rebase, i);
                             if (fpcheck(val[chunk.second.m_Rebase]) && HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
-                                bformata(tgt, "uintBitsToFloat(uint(0x%Xu))", *(uint32_t *)&val[chunk.second.m_Rebase]);
+                                bformata(tgt, "asfloat(uint(0x%Xu))", *(uint32_t *)&val[chunk.second.m_Rebase]);
                             else
                                 HLSLcc::PrintFloat(tgt, val[chunk.second.m_Rebase]);
                             bcatcstr(tgt, ";\n");
@@ -3193,7 +3212,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                                 if (k != 0)
                                     bcatcstr(tgt, ", ");
                                 if (fpcheck(val[k]) && HaveBitEncodingOps(psContext->psShader->eTargetLanguage))
-                                    bformata(tgt, "uintBitsToFloat(uint(0x%Xu))", *(uint32_t *)&val[k + chunk.second.m_Rebase]);
+                                    bformata(tgt, "asfloat(uint(0x%Xu))", *(uint32_t *)&val[k + chunk.second.m_Rebase]);
                                 else
                                     HLSLcc::PrintFloat(tgt, val[k + chunk.second.m_Rebase]);
                             }
@@ -3903,9 +3922,9 @@ bool ToHLSL::TranslateSystemValue(const Operand *psOperand, const ShaderInfo::In
     switch (sig->eSystemValueType)
     {
         case NAME_POSITION:
-            if (psContext->psShader->eShaderType == PIXEL_SHADER)
+            /*if (psContext->psShader->eShaderType == PIXEL_SHADER)
                 result = "hlslcc_FragCoord";
-            else
+            else*/
                 result = "gl_Position";
             return true;
         case NAME_RENDER_TARGET_ARRAY_INDEX:
@@ -4050,6 +4069,16 @@ bool ToHLSL::TranslateSystemValue(const Operand *psOperand, const ShaderInfo::In
     if (sig->semanticName == "PSIZE")
     {
         result = "gl_PointSize";
+        if (pui32IgnoreSwizzle)
+            *pui32IgnoreSwizzle = 1;
+        return true;
+    }
+
+    if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH ||
+        psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH_LESS_EQUAL ||
+        psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH_GREATER_EQUAL)
+    {
+        result = "gl_FragDepth";
         if (pui32IgnoreSwizzle)
             *pui32IgnoreSwizzle = 1;
         return true;

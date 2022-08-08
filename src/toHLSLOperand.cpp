@@ -806,15 +806,10 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
             break;
         }
         case OPERAND_TYPE_OUTPUT_DEPTH:
-            if (psContext->psShader->eTargetLanguage == LANG_ES_100 && !psContext->EnableExtension("GL_EXT_frag_depth"))
-            {
-                bcatcstr(psContext->extensions, "#define gl_FragDepth gl_FragDepthEXT\n");
-            }
-        // fall through
         case OPERAND_TYPE_OUTPUT_DEPTH_GREATER_EQUAL:
         case OPERAND_TYPE_OUTPUT_DEPTH_LESS_EQUAL:
         {
-            bcatcstr(glsl, "gl_FragDepth");
+            bformata(glsl, "%s.gl_FragDepth", GetOutputStructVariableName().c_str());
             break;
         }
         case OPERAND_TYPE_TEMP:

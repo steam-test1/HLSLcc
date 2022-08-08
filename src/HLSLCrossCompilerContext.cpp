@@ -304,7 +304,7 @@ bool HLSLCrossCompilerContext::OutputNeedsDeclaring(const Operand* psOperand, co
         if (psOperand->eType == OPERAND_TYPE_OUTPUT_DEPTH)
         {
             // GL doesn't need declaration, Metal does.
-            return psShader->eTargetLanguage == LANG_METAL;
+            return psShader->eTargetLanguage == LANG_METAL || psShader->eTargetLanguage == LANG_HLSL;
         }
     }
 
