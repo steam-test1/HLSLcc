@@ -71,14 +71,14 @@ void Shader::ConsolidateHullTempVars()
 // Also resolve access flags for other UAVs as well. No component count resolving for them.
 void ShaderPhase::ResolveUAVProperties(const ShaderInfo& sInfo)
 {
-    Declaration *psFirstDeclaration = &psDecl[0];
-
     uint32_t ui32NumDeclarations = (uint32_t)psDecl.size();
-    Instruction *psFirstInstruction = &psInst[0];
     uint32_t ui32NumInstructions = (uint32_t)psInst.size();
 
     if (ui32NumDeclarations == 0 || ui32NumInstructions == 0)
         return;
+
+    Declaration *psFirstDeclaration = &psDecl[0];
+    Instruction *psFirstInstruction = &psInst[0];
 
     Declaration *psLastDeclaration = psFirstDeclaration + ui32NumDeclarations - 1;
     Instruction *psLastInstruction = psFirstInstruction + ui32NumInstructions - 1;
