@@ -7,6 +7,8 @@
 #include "growing_array.h"
 #include <stdint.h>
 
+enum OPERAND_TYPE;
+
 //Reflection
 #define MAX_RESOURCE_BINDINGS 256
 
@@ -452,6 +454,7 @@ public:
     int GetInterfaceVarFromOffset(uint32_t ui32Offset, ShaderVar** ppsShaderVar) const;
 
     int GetInputSignatureFromRegister(const uint32_t ui32Register, const uint32_t ui32Mask, const InOutSignature** ppsOut, bool allowNull = false) const;
+    int GetInputSignatureFromOperandType(const OPERAND_TYPE type, const InOutSignature** ppsOut) const;
     int GetPatchConstantSignatureFromRegister(const uint32_t ui32Register, const uint32_t ui32Mask, const InOutSignature** ppsOut, bool allowNull = false) const;
     int GetOutputSignatureFromRegister(const uint32_t ui32Register,
         const uint32_t ui32CompMask,
