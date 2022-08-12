@@ -1076,15 +1076,28 @@ bool ToHLSL::Translate()
         // INFO(SPSI): Inject vertex instance IDs
         if (psShader->eShaderType == VERTEX_SHADER)
         {
+            //mem->second.m_Members.
             if (mem->first == GetOutputStructName())
             {
-                psContext->AddIndentation();
-                bcatcstr(glsl, "UNITY_VERTEX_OUTPUT_STEREO\n");
+                bool skip = std::any_of(mem->second.m_Members.begin(), mem->second.m_Members.end(), [](auto inp) {
+                    return inp.second.find("SV_RenderTargetArrayIndex") != std::string::npos;
+                });
+                if (!skip)
+                {
+                    psContext->AddIndentation();
+                    bcatcstr(glsl, "UNITY_VERTEX_OUTPUT_STEREO\n");
+                }
             }
             else if (mem->first == GetInputStructName())
             {
-                psContext->AddIndentation();
-                bcatcstr(glsl, "UNITY_VERTEX_INPUT_INSTANCE_ID\n");
+                bool skip = std::any_of(mem->second.m_Members.begin(), mem->second.m_Members.end(), [](auto inp) {
+                    return inp.second.find("SV_InstanceID") != std::string::npos;
+                });
+                if (!skip)
+                {
+                    psContext->AddIndentation();
+                    bcatcstr(glsl, "UNITY_VERTEX_INPUT_INSTANCE_ID\n");
+                }
             }
         }
 

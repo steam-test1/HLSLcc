@@ -1522,7 +1522,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
                     bcatcstr(glsl, "gl_Position");
                     break;
                 case NAME_RENDER_TARGET_ARRAY_INDEX:
-                    bcatcstr(glsl, "gl_Layer");
+                    bcatcstr(glsl, "stereoTargetEyeIndex");
                     *pui32IgnoreSwizzle = 1;
                     break;
                 case NAME_CLIP_DISTANCE:

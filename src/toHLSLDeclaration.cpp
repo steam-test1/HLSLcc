@@ -3928,7 +3928,7 @@ bool ToHLSL::TranslateSystemValue(const Operand *psOperand, const ShaderInfo::In
                 result = "gl_Position";
             return true;
         case NAME_RENDER_TARGET_ARRAY_INDEX:
-            result = "gl_Layer";
+            result = "stereoTargetEyeIndex";
             if (pui32IgnoreSwizzle)
                 *pui32IgnoreSwizzle = 1;
             return true;
