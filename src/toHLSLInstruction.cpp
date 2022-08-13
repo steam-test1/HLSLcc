@@ -1307,7 +1307,10 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     {
         if (!needsLodWorkaroundES2)
         {
-            bcatcstr(glsl, ", 0.0,");
+            if (eResDim == RESOURCE_DIMENSION_TEXTURECUBE || eResDim == RESOURCE_DIMENSION_TEXTURE3D)
+                bcatcstr(glsl, ", ");
+            else
+                bcatcstr(glsl, ", 0.0,");
             TranslateOperand(psSrcLOD, TO_AUTO_BITCAST_TO_FLOAT);
             bcatcstr(glsl, ")");
             if (psContext->psShader->ui32MajorVersion < 4)
