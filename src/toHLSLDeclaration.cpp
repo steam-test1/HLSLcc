@@ -1109,7 +1109,8 @@ const std::unordered_set<std::string> knownGlobals
     "unity_4LightPosY0", "unity_4LightPosZ0", "unity_4LightAtten0", "unity_LightColor",
     "unity_WorldToShadow", "_LightColor", "unity_LightPosition", "unity_LightAtten",
     "unity_SpotDirection", "unity_LightmapST", "unity_AmbientSky", "unity_AmbientEquator",
-    "unity_AmbientGround", "unity_FogColor", "unity_FogParams", "unity_LODFade", "_TextureSampleAdd"
+    "unity_AmbientGround", "unity_FogColor", "unity_FogParams", "unity_LODFade", "_TextureSampleAdd",
+    "unity_Lightmap_HDR", "unity_DynamicLightmap_HDR"
 };
 
 const std::unordered_set<std::string> knownCBuffers
