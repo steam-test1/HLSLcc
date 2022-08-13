@@ -3712,6 +3712,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 }
                 else
                 {
+                    bcatcstr(glsl, "[loop]\n");
                     bcatcstr(glsl, "while(true){\n");
                 }
                 ++psContext->indent;
