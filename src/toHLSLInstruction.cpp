@@ -15,7 +15,7 @@
 using namespace HLSLcc;
 
 // In toGLSLDeclaration.cpp
-const char* GetSamplerType(HLSLCrossCompilerContext* psContext,
+std::string GetSamplerTypeHLSL(HLSLCrossCompilerContext* psContext,
     const RESOURCE_DIMENSION eDimension,
     const uint32_t ui32RegisterNumber);
 bool DeclareRWStructuredBufferTemplateTypeAsInteger(HLSLCrossCompilerContext* psContext, const Operand* psOperand);
@@ -799,7 +799,7 @@ std::string ToHLSL::GetVulkanDummySamplerName()
     while (psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, smpIdx, &pSmpInfo) != 0)
     {
         if (pSmpInfo->m_SamplerMode != D3D10_SB_SAMPLER_MODE_COMPARISON)
-            return ResourceNameHLSL(psContext, RGROUP_SAMPLER, smpIdx, 0);
+            return ResourceNameHLSL(psContext, RGROUP_SAMPLER, smpIdx);
 
         smpIdx++;
     }
@@ -825,14 +825,14 @@ void ToHLSL::TranslateTexelFetch(
 
     std::string vulkanSamplerName = GetVulkanDummySamplerName();
 
-    std::string texName = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psInst->asOperands[2].ui32RegisterNumber, 0);
+    std::string texName = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psInst->asOperands[2].ui32RegisterNumber);
     const bool hasOffset = (psInst->bAddressOffset != 0);
 
     // On Vulkan wrap the tex name with the sampler constructor
     if (psContext->IsVulkan())
     {
         const RESOURCE_DIMENSION eResDim = psContext->psShader->aeResourceDims[psInst->asOperands[2].ui32RegisterNumber];
-        std::string smpType = GetSamplerType(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
+        std::string smpType = GetSamplerTypeHLSL(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
         std::ostringstream oss;
         oss << smpType;
         oss << "(" << texName << ", " << vulkanSamplerName << ")";
@@ -992,7 +992,7 @@ void ToHLSL::GetResInfoData(Instruction* psInst, int index, int destElem)
     bool isUAV = (psInst->asOperands[2].eType == OPERAND_TYPE_UNORDERED_ACCESS_VIEW);
     bool isMS = psInst->eResDim == RESOURCE_DIMENSION_TEXTURE2DMS || psInst->eResDim == RESOURCE_DIMENSION_TEXTURE2DMSARRAY;
 
-    std::string texName = ResourceNameHLSL(psContext, isUAV ? RGROUP_UAV : RGROUP_TEXTURE, psInst->asOperands[2].ui32RegisterNumber, 0);
+    std::string texName = ResourceNameHLSL(psContext, isUAV ? RGROUP_UAV : RGROUP_TEXTURE, psInst->asOperands[2].ui32RegisterNumber);
 
     // On Vulkan wrap the tex name with the sampler constructor
     if (psContext->IsVulkan() && !isUAV)
@@ -1000,7 +1000,7 @@ void ToHLSL::GetResInfoData(Instruction* psInst, int index, int destElem)
         std::string vulkanSamplerName = GetVulkanDummySamplerName();
 
         const RESOURCE_DIMENSION eResDim = psContext->psShader->aeResourceDims[psInst->asOperands[2].ui32RegisterNumber];
-        std::string smpType = GetSamplerType(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
+        std::string smpType = GetSamplerTypeHLSL(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
         std::ostringstream oss;
         oss << smpType;
         oss << "(" << texName << ", " << vulkanSamplerName << ")";
@@ -1100,7 +1100,7 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     Operand* psSrcDy = (ui32Flags & TEXSMP_FLAG_GRAD) ? &psInst->asOperands[5] : 0;
     Operand* psSrcBias = (ui32Flags & TEXSMP_FLAG_BIAS) ? &psInst->asOperands[4] : 0;
 
-    const char* funcName = "tex2D";
+    const char* funcName = "Load";
     const char* offset = "";
     const char* depthCmpCoordType = "";
     const char* gradSwizzle = "";
@@ -1109,17 +1109,40 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     uint32_t ui32NumOffsets = 0;
 
     const RESOURCE_DIMENSION eResDim = psContext->psShader->aeResourceDims[psSrcTex->ui32RegisterNumber];
-    const int useCombinedTextureSamplers = (psContext->flags & HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS) ? 1 : 0;
 
-    if (psInst->bAddressOffset)
+    // Build the sampler name here
+    const ResourceBinding* pSmpRes = NULL;
+    psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, psSrcSamp->ui32RegisterNumber, &pSmpRes);
+
+    if (pSmpRes)
+        funcName = "Sample";
+
+    if (ui32Flags & TEXSMP_FLAG_LOD)
+        funcName = "SampleLevel";
+    else if (ui32Flags & TEXSMP_FLAG_BIAS)
+        funcName = "SampleBias";
+    else if (ui32Flags & TEXSMP_FLAG_GRAD)
+        funcName = "SampleGrad";
+    else if ((ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) && (ui32Flags & TEXSMP_FLAG_FIRSTLOD))
+        funcName = "SampleCmpLevelZero";
+    else if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
+        funcName = "SampleCmp";
+    else if (ui32Flags & TEXSMP_FLAG_FIRSTLOD)
+        funcName = "SampleLevel";
+    else if (ui32Flags & TEXSMP_FLAG_GATHER)
     {
-        offset = "Offset";
-    }
-    if (psContext->IsSwitch() && psInst->eOpcode == OPCODE_GATHER4_PO)
-    {
-        // it seems that other GLSLCore compilers accept textureGather(sampler2D sampler, vec2 texCoord, ivec2 texelOffset, int component) with the "texelOffset" parameter,
-        // however this is not in the GLSL spec, and Switch's GLSLc compiler requires to use the textureGatherOffset version of the function
-        offset = "Offset";
+        if (psSrcSamp->GetNumSwizzleElements() > 0)
+        {
+            switch (psSrcSamp->aui32Swizzle[0])
+            {
+                case OPERAND_4_COMPONENT_X: funcName = "GatherRed"; break;
+                case OPERAND_4_COMPONENT_Y: funcName = "GatherGreen"; break;
+                case OPERAND_4_COMPONENT_Z: funcName = "GatherBlue"; break;
+                case OPERAND_4_COMPONENT_W: funcName = "GatherAlpha"; break;
+            }
+        }
+        else
+            funcName = "Gather";
     }
 
     switch (eResDim)
@@ -1129,23 +1152,13 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float2";
             gradSwizzle = ".x";
             ui32NumOffsets = 1;
-            funcName = "texture1D"; // TODO(pema): WTF is a texture1d
-            if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
-            {
-                funcName = "shadow1D";
-            }
             break;
         }
         case RESOURCE_DIMENSION_TEXTURE2D:
         {
-            depthCmpCoordType = "vec3";
+            depthCmpCoordType = "float3";
             gradSwizzle = ".xy";
             ui32NumOffsets = 2;
-            funcName = "tex2D";
-            if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) // TODO(pema): Wat dis
-            {
-                funcName = "tex2D";
-            }
             break;
         }
         case RESOURCE_DIMENSION_TEXTURECUBE:
@@ -1153,7 +1166,6 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float4";
             gradSwizzle = ".xyz";
             ui32NumOffsets = 3;
-            funcName = "texCUBE";
             break;
         }
         case RESOURCE_DIMENSION_TEXTURE3D:
@@ -1161,7 +1173,6 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
             depthCmpCoordType = "float4";
             gradSwizzle = ".xyz";
             ui32NumOffsets = 3;
-            funcName = "tex3D";
             break;
         }
         case RESOURCE_DIMENSION_TEXTURE1DARRAY:
@@ -1191,138 +1202,40 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
         }
     }
 
-    if (ui32Flags & TEXSMP_FLAG_GATHER) // TODO(pema): Wat dis
-        funcName = "textureGather";
-
     uint32_t uniqueNameCounter = 0;
-
-    // TODO(pema): A whole bunch of shit down here
-    // In GLSL, for every texture sampling func overload, except for cubemap arrays, the
-    // depth compare reference value is given as the last component of the texture coord vector.
-    // Cubemap array sampling as well as all the gather funcs have a separate parameter for it.
-    // HLSL always provides the reference as a separate param.
-    //
-    // Here we create a temp texcoord var with the reference value embedded
-    if ((ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) &&
-        (eResDim != RESOURCE_DIMENSION_TEXTURECUBEARRAY && !(ui32Flags & TEXSMP_FLAG_GATHER)))
-    {
-        uniqueNameCounter = psContext->psShader->asPhases[psContext->currentPhase].m_NextTexCoordTemp++;
-        psContext->AddIndentation();
-        // Create a temp variable for the coordinate as Adrenos hate nonstandard swizzles in the texcoords
-        bformata(glsl, "%s txVec%d = ", depthCmpCoordType, uniqueNameCounter);
-        bformata(glsl, "%s(", depthCmpCoordType);
-        TranslateTexCoord(eResDim, psDestAddr);
-        bcatcstr(glsl, ",");
-        // Last component is the reference
-        TranslateOperand(psSrcRef, TO_AUTO_BITCAST_TO_FLOAT);
-        bcatcstr(glsl, ");\n");
-    }
 
     SHADER_VARIABLE_TYPE dataType = psContext->psShader->sInfo.GetTextureDataType(psSrcTex->ui32RegisterNumber);
     psContext->AddIndentation();
     AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
 
-    // GLSL doesn't have textureLod() for 2d shadow samplers, we'll have to use grad instead. In that case assume LOD 0.
-    bool needsLodWorkaround = (eResDim == RESOURCE_DIMENSION_TEXTURE2DARRAY) && (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE);
-    const bool needsLodWorkaroundES2 = (psContext->psShader->eTargetLanguage == LANG_ES_100 && psContext->psShader->eShaderType == PIXEL_SHADER && (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE));
+    bcatcstr(glsl, TextureSamplerNameHLSL(&psContext->psShader->sInfo, psSrcTex->ui32RegisterNumber, psSrcSamp->ui32RegisterNumber).c_str());
+    bformata(glsl, ".%s(", funcName);
 
-    // Workaround for switch for OPCODE_SAMPLE_C_LZ, in particular sampler2dArrayShadow.SampleCmpLevelZero().
-    // textureGrad() with shadow samplers is not implemented in HW on switch so the behavior is emulated using shuffles and 4 texture fetches.
-    // The code generated is very heavy.
-    // Workaround: use standard texture fetch, shadows are currently not mipmapped, so that should work for now.
-    if (needsLodWorkaround && psContext->IsSwitch() && ui32Flags == (TEXSMP_FLAG_DEPTHCOMPARE | TEXSMP_FLAG_FIRSTLOD))
-    {
-        needsLodWorkaround = false;
-        ui32Flags &= ~TEXSMP_FLAG_FIRSTLOD;
-    }
+    if (pSmpRes)
+        bcatcstr(glsl, ResourceNameHLSL(psContext, RGROUP_SAMPLER, psSrcSamp->ui32RegisterNumber).c_str());
 
-    if (needsLodWorkaround)
-    {
-        bformata(glsl, "%sgrad%s(", funcName, offset);
-    }
-    else
-    {
-        if (psContext->psShader->eTargetLanguage == LANG_ES_100 &&
-            psContext->psShader->eShaderType == PIXEL_SHADER &&
-            ui32Flags & (TEXSMP_FLAG_LOD | TEXSMP_FLAG_FIRSTLOD | TEXSMP_FLAG_GRAD))
-            ext = "EXT";
-
-        if (ui32Flags & (TEXSMP_FLAG_LOD | TEXSMP_FLAG_FIRSTLOD) && !needsLodWorkaroundES2)
-            bformata(glsl, "%slod%s%s(", funcName, ext, offset);
-        else if (ui32Flags & TEXSMP_FLAG_GRAD)
-            bformata(glsl, "%sgrad%s%s(", funcName, ext, offset);
-        else
-            bformata(glsl, "%s%s%s(", funcName, ext, offset);
-    }
-
-    if (psContext->IsVulkan())
-    {
-        // Build the sampler name here
-        std::string samplerType = GetSamplerType(psContext, eResDim, psSrcTex->ui32RegisterNumber);
-        const ResourceBinding *pSmpRes = NULL;
-        psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, psSrcSamp->ui32RegisterNumber, &pSmpRes);
-
-        if (pSmpRes->m_SamplerMode == D3D10_SB_SAMPLER_MODE_COMPARISON)
-            samplerType.append("Shadow");
-        std::string texName = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psSrcTex->ui32RegisterNumber, 0);
-        std::string smpName = ResourceNameHLSL(psContext, RGROUP_SAMPLER, psSrcSamp->ui32RegisterNumber, 0);
-        bformata(glsl, "%s(%s, %s)", samplerType.c_str(), texName.c_str(), smpName.c_str());
-    }
-    else
-    {
-        // Sampler name
-        if (!useCombinedTextureSamplers)
-            ResourceNameHLSL(glsl, psContext, RGROUP_TEXTURE, psSrcTex->ui32RegisterNumber, ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE);
-        else
-            bcatcstr(glsl, TextureSamplerNameHLSL(&psContext->psShader->sInfo, psSrcTex->ui32RegisterNumber, psSrcSamp->ui32RegisterNumber, ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE).c_str());
-    }
     bcatcstr(glsl, ", ");
+    TranslateTexCoord(eResDim, psDestAddr);
 
-    if ((ui32Flags & TEXSMP_FLAG_LOD) && !needsLodWorkaround)
-        bcatcstr(glsl, "float4(");
-
-    // Texture coordinates, either from previously constructed temp
-    // or straight from the psDestAddr operand
-    if ((ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) &&
-        (eResDim != RESOURCE_DIMENSION_TEXTURECUBEARRAY && !(ui32Flags & TEXSMP_FLAG_GATHER)))
-        bformata(glsl, "txVec%d", uniqueNameCounter);
-    else
-        TranslateTexCoord(eResDim, psDestAddr);
-
-    // If depth compare reference was not embedded to texcoord
-    // then insert it here as a separate param
-    if ((ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) &&
-        (eResDim == RESOURCE_DIMENSION_TEXTURECUBEARRAY || (ui32Flags & TEXSMP_FLAG_GATHER)))
+    if (ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE)
     {
         bcatcstr(glsl, ", ");
         TranslateOperand(psSrcRef, TO_AUTO_BITCAST_TO_FLOAT);
     }
-
-    // Add LOD/grad parameters based on the flags
-    if (needsLodWorkaround)
-    {
-        bcatcstr(glsl, ", float2(0.0, 0.0), float2(0.0, 0.0)");
-    }
     else if (ui32Flags & TEXSMP_FLAG_LOD)
     {
-        if (!needsLodWorkaroundES2)
-        {
-            if (eResDim == RESOURCE_DIMENSION_TEXTURECUBE || eResDim == RESOURCE_DIMENSION_TEXTURE3D)
-                bcatcstr(glsl, ", ");
-            else
-                bcatcstr(glsl, ", 0.0,");
-            TranslateOperand(psSrcLOD, TO_AUTO_BITCAST_TO_FLOAT);
-            bcatcstr(glsl, ")");
-            if (psContext->psShader->ui32MajorVersion < 4)
-            {
-                bcatcstr(glsl, ".w"); // TODO(pema): Wat dis
-            }
-        }
+        bcatcstr(glsl, ", ");
+        TranslateOperand(psSrcLOD, TO_AUTO_BITCAST_TO_FLOAT);
     }
-    else if (ui32Flags & TEXSMP_FLAG_FIRSTLOD)
+    else if (ui32Flags & TEXSMP_FLAG_FIRSTLOD) // not DEPTHCOMPARE
     {
-        if (!needsLodWorkaroundES2)
-            bcatcstr(glsl, ", 0.0");
+        bcatcstr(glsl, ", ");
+        bcatcstr(glsl, "0.0");
+    }
+    else if (ui32Flags & TEXSMP_FLAG_BIAS)
+    {
+        bcatcstr(glsl, ", ");
+        TranslateOperand(psSrcBias, TO_AUTO_BITCAST_TO_FLOAT);
     }
     else if (ui32Flags & TEXSMP_FLAG_GRAD)
     {
@@ -1367,34 +1280,9 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
         if (ui32NumOffsets > 2)
             mask |= OPERAND_4_COMPONENT_MASK_Z;
 
-        bcatcstr(glsl, ",");
+        bcatcstr(glsl, ", ");
         TranslateOperand(psSrcOff, TO_FLAG_INTEGER, mask);
     }
-
-    // Add bias if present
-    if (ui32Flags & TEXSMP_FLAG_BIAS)
-    {
-        bcatcstr(glsl, ", ");
-        TranslateOperand(psSrcBias, TO_AUTO_BITCAST_TO_FLOAT);
-    }
-
-    // Add texture gather component selection if needed
-    if ((ui32Flags & TEXSMP_FLAG_GATHER) && psSrcSamp->GetNumSwizzleElements() > 0)
-    {
-        ASSERT(psSrcSamp->GetNumSwizzleElements() == 1);
-        if (psSrcSamp->aui32Swizzle[0] != OPERAND_4_COMPONENT_X)
-        {
-            if (!(ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE))
-            {
-                bformata(glsl, ", %d", psSrcSamp->aui32Swizzle[0]);
-            }
-            else
-            {
-                // Component selection not supported with depth compare gather
-            }
-        }
-    }
-
     bcatcstr(glsl, ")");
 
     if (!(ui32Flags & TEXSMP_FLAG_DEPTHCOMPARE) || (ui32Flags & TEXSMP_FLAG_GATHER))
@@ -4606,7 +4494,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 bcatcstr(glsl, "atomicAdd(");
             else
                 bcatcstr(glsl, "atomicCounterIncrement(");
-            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psInst->asOperands[1].ui32RegisterNumber, 0);
+            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psInst->asOperands[1].ui32RegisterNumber);
             bformata(glsl, "_counter");
             if (isVulkan || avoidAtomicCounter)
                 bcatcstr(glsl, ", 1u)");
@@ -4628,7 +4516,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 bcatcstr(glsl, "(atomicAdd(");
             else
                 bcatcstr(glsl, "atomicCounterDecrement(");
-            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psInst->asOperands[1].ui32RegisterNumber, 0);
+            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psInst->asOperands[1].ui32RegisterNumber);
             bformata(glsl, "_counter");
             if (isVulkan || avoidAtomicCounter)
                 bcatcstr(glsl, ", 0xffffffffu) + 0xffffffffu)");
@@ -4723,13 +4611,13 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
             psContext->AddIndentation();
             AddAssignToDest(&psInst->asOperands[0], eResInfoReturnType == RESINFO_INSTRUCTION_RETURN_FLOAT ? SVT_FLOAT : SVT_UINT, 1, psInst->ui32PreciseMask, &numParenthesis);
             bcatcstr(glsl, "textureSamples(");
-            std::string texName = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psInst->asOperands[1].ui32RegisterNumber, 0);
+            std::string texName = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psInst->asOperands[1].ui32RegisterNumber);
             if (psContext->IsVulkan())
             {
                 std::string vulkanSamplerName = GetVulkanDummySamplerName();
 
                 const RESOURCE_DIMENSION eResDim = psContext->psShader->aeResourceDims[psInst->asOperands[2].ui32RegisterNumber];
-                std::string smpType = GetSamplerType(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
+                std::string smpType = GetSamplerTypeHLSL(psContext, eResDim, psInst->asOperands[2].ui32RegisterNumber);
                 std::ostringstream oss;
                 oss << smpType;
                 oss << "(" << texName << ", " << vulkanSamplerName << ")";

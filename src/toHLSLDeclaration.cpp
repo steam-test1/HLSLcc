@@ -1036,7 +1036,7 @@ static void DeclareBufferVariable(HLSLCrossCompilerContext* psContext, uint32_t 
     bstring BufNamebstr = bfromcstr("");
     // Use original HLSL bindings for UAVs only. For non-UAV buffers we have resolved new binding points from the same register space.
 
-    ResourceNameHLSL(BufNamebstr, psContext, isUAV ? RGROUP_UAV : RGROUP_TEXTURE, psOperand->ui32RegisterNumber, 0);
+    ResourceNameHLSL(BufNamebstr, psContext, isUAV ? RGROUP_UAV : RGROUP_TEXTURE, psOperand->ui32RegisterNumber);
 
     char *btmp = bstr2cstr(BufNamebstr, '\0');
     std::string BufName = btmp;
@@ -1433,7 +1433,7 @@ static HLSLCC_TEX_DIMENSION GetTextureDimension(HLSLCrossCompilerContext* psCont
 }
 
 // Not static because this is used in toGLSLInstruction.cpp when sampling Vulkan textures
-const char* GetSamplerTypeHLSL(HLSLCrossCompilerContext* psContext,
+std::string GetSamplerTypeHLSL(HLSLCrossCompilerContext* psContext,
     const RESOURCE_DIMENSION eDimension,
     const uint32_t ui32RegisterNumber)
 {
@@ -1445,157 +1445,43 @@ const char* GetSamplerTypeHLSL(HLSLCrossCompilerContext* psContext,
     {
         eType = (RESOURCE_RETURN_TYPE)psBinding->ui32ReturnType;
     }
-    switch (eDimension)
+
+    std::string returnType = "";
+    switch (eType)
     {
-        case RESOURCE_DIMENSION_BUFFER:
-        {
-            if (IsESLanguage(psContext->psShader->eTargetLanguage))
-                psContext->RequireExtension("GL_EXT_texture_buffer");
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isamplerBuffer";
-                case RETURN_TYPE_UINT:
-                    return "usamplerBuffer";
-                default:
-                    return "samplerBuffer";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE1D:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler1D";
-                case RETURN_TYPE_UINT:
-                    return "usampler1D";
-                default:
-                    return "sampler1D";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE2D:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler2D";
-                case RETURN_TYPE_UINT:
-                    return "usampler2D";
-                default:
-                    return "sampler2D";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE2DMS:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler2DMS";
-                case RETURN_TYPE_UINT:
-                    return "usampler2DMS";
-                default:
-                    return "sampler2DMS";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE3D:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler3D";
-                case RETURN_TYPE_UINT:
-                    return "usampler3D";
-                default:
-                    return "sampler3D";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURECUBE:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isamplerCube";
-                case RETURN_TYPE_UINT:
-                    return "usamplerCube";
-                default:
-                    return "samplerCUBE";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE1DARRAY:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler1DArray";
-                case RETURN_TYPE_UINT:
-                    return "usampler1DArray";
-                default:
-                    return "sampler1DArray";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE2DARRAY:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler2DArray";
-                case RETURN_TYPE_UINT:
-                    return "usampler2DArray";
-                default:
-                    return "sampler2DArray";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURE2DMSARRAY:
-        {
-            if (IsESLanguage(psContext->psShader->eTargetLanguage))
-                psContext->RequireExtension("GL_OES_texture_storage_multisample_2d_array");
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isampler2DMSArray";
-                case RETURN_TYPE_UINT:
-                    return "usampler2DMSArray";
-                default:
-                    return "sampler2DMSArray";
-            }
-            break;
-        }
-
-        case RESOURCE_DIMENSION_TEXTURECUBEARRAY:
-        {
-            switch (eType)
-            {
-                case RETURN_TYPE_SINT:
-                    return "isamplerCubeArray";
-                case RETURN_TYPE_UINT:
-                    return "usamplerCubeArray";
-                default:
-                    return "samplerCubeArray";
-            }
-            break;
-        }
-        default:
-            ASSERT(0);
+        case RETURN_TYPE_UNORM:  returnType = "unorm float"; break;
+        case RETURN_TYPE_SNORM:  returnType = "snorm float"; break;
+        case RETURN_TYPE_SINT:   returnType = "int";         break;
+        case RETURN_TYPE_UINT:   returnType = "uint";        break;
+        case RETURN_TYPE_FLOAT:  returnType = "";            break;
+        case RETURN_TYPE_DOUBLE: returnType = "double";      break;
+        case RETURN_TYPE_MIXED:
+        case RETURN_TYPE_CONTINUED:
+        case RETURN_TYPE_UNUSED:
             break;
     }
 
-    return "sampler2D";
+    std::string res = "";
+    switch (eDimension)
+    {
+        // TODO(pema): Buffers
+        case RESOURCE_DIMENSION_BUFFER:           res = "Buffer";           break;
+        case RESOURCE_DIMENSION_TEXTURE1D:        res = "Texture1D";        break;
+        case RESOURCE_DIMENSION_TEXTURE2D:        res = "Texture2D";        break;
+        case RESOURCE_DIMENSION_TEXTURE2DMS:      res = "Texture2DMS";      break;
+        case RESOURCE_DIMENSION_TEXTURE3D:        res = "Texture3D";        break;
+        case RESOURCE_DIMENSION_TEXTURECUBE:      res = "TextureCube";      break;
+        case RESOURCE_DIMENSION_TEXTURE1DARRAY:   res = "Texture1DArray";   break;
+        case RESOURCE_DIMENSION_TEXTURE2DARRAY:   res = "Texture2DArray";   break;
+        case RESOURCE_DIMENSION_TEXTURE2DMSARRAY: res = "Texture2DMSArray"; break;
+        case RESOURCE_DIMENSION_TEXTURECUBEARRAY: res = "TextureCubeArray"; break;
+        default: ASSERT(0); break;
+    }
+
+    if (returnType != "")
+        res.append("<" + returnType + ">");
+
+    return res;
 }
 
 static const char *GetSamplerPrecision(const HLSLCrossCompilerContext *psContext, REFLECT_RESOURCE_PRECISION ePrec)
@@ -1626,7 +1512,7 @@ static void TranslateVulkanResource(HLSLCrossCompilerContext* psContext, const D
     ASSERT(psBinding != NULL);
 
     const char *samplerPrecision = GetSamplerPrecision(psContext, psBinding ? psBinding->ePrecision : REFLECT_RESOURCE_PRECISION_UNKNOWN);
-    std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 0);
+    std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber);
 
     const char* samplerTypeName = GetVulkanTextureType(psContext,
         psDecl->value.eResourceDimension,
@@ -1649,7 +1535,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
     const char *samplerPrecision = NULL;
     std::set<uint32_t>::iterator i;
 
-    const char* samplerTypeName = GetSamplerTypeHLSL(psContext,
+    std::string samplerTypeName = GetSamplerTypeHLSL(psContext,
         psDecl->value.eResourceDimension,
         psDecl->asOperands[0].ui32RegisterNumber);
 
@@ -1683,14 +1569,14 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
         {
             for (i = psDecl->samplersUsed.begin(); i != psDecl->samplersUsed.end(); i++)
             {
-                std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i, 1);
+                std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i);
                 if (knownGlobals.find(tname) != knownGlobals.end())
                     return;
                 bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
                 bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
                 bcatcstr(glsl, "uniform");
                 bcatcstr(glsl, samplerPrecision);
-                bcatcstr(glsl, samplerTypeName);
+                bcatcstr(glsl, samplerTypeName.c_str());
                 bcatcstr(glsl, " ");//bcatcstr(glsl, "Shadow ");
                 bcatcstr(glsl, tname.c_str());
                 bcatcstr(glsl, ";\n");
@@ -1699,14 +1585,14 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
         }
         for (i = psDecl->samplersUsed.begin(); i != psDecl->samplersUsed.end(); i++)
         {
-            std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i, 0);
+            std::string tname = TextureSamplerNameHLSL(&psShader->sInfo, psDecl->asOperands[0].ui32RegisterNumber, *i);
             if (knownGlobals.find(tname) != knownGlobals.end())
                 return;
             bformata(glsl, "#ifndef %s_DEFINED\n", tname.c_str());
             bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
             bcatcstr(glsl, "uniform");
             bcatcstr(glsl, samplerPrecision);
-            bcatcstr(glsl, samplerTypeName);
+            bcatcstr(glsl, samplerTypeName.c_str());
             bcatcstr(glsl, " ");
             bcatcstr(glsl, tname.c_str());
             bcatcstr(glsl, ";\n");
@@ -1714,7 +1600,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
         }
     }
 
-    std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 0);
+    std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber);
     if (knownGlobals.find(tname) != knownGlobals.end())
         return;
 
@@ -1722,7 +1608,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
     bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
     bcatcstr(glsl, "uniform");
     bcatcstr(glsl, samplerPrecision);
-    bcatcstr(glsl, samplerTypeName);
+    bcatcstr(glsl, samplerTypeName.c_str());
     bcatcstr(glsl, " ");
     bcatcstr(glsl, tname.c_str());
     bcatcstr(glsl, ";\n");
@@ -1734,7 +1620,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
     {
         //Create shadow and non-shadow sampler.
         //HLSL does not have separate types for depth compare, just different functions.
-        std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 1);
+        std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber);
         if (knownGlobals.find(tname) != knownGlobals.end())
             return;
 
@@ -1749,7 +1635,7 @@ static void TranslateResourceTexture(HLSLCrossCompilerContext* psContext, const 
         bformata(glsl, "#define %s_DEFINED\n", tname.c_str());
         bcatcstr(glsl, "uniform");
         bcatcstr(glsl, samplerPrecision);
-        bcatcstr(glsl, samplerTypeName);
+        bcatcstr(glsl, samplerTypeName.c_str());
         bcatcstr(glsl, " ");//bcatcstr(glsl, "Shadow ");
         bcatcstr(glsl, tname.c_str());
         bcatcstr(glsl, ";\n");
@@ -2848,7 +2734,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             if (HaveUniformBindingsAndLocations(psContext->psShader->eTargetLanguage, psContext->psShader->extensions, psContext->flags) ||
                 ((psContext->flags & HLSLCC_FLAG_FORCE_EXPLICIT_LOCATIONS) && ((psContext->flags & HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS) != HLSLCC_FLAG_COMBINE_TEXTURE_SAMPLERS)))
             {
-                std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                std::string tname = ResourceNameHLSL(psContext, RGROUP_TEXTURE, psDecl->asOperands[0].ui32RegisterNumber);
                 GLSLCrossDependencyData::GLSLBufferBindPointInfo slotInfo = psContext->psDependencies->GetGLSLResourceBinding(tname, GLSLCrossDependencyData::BufferType_Texture);
 
                 //bformata(glsl, "layout(binding = %d, std140) ", slotInfo.slot);
@@ -2874,7 +2760,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                         bcatcstr(glsl, "highp ");
                     bformata(glsl, "%s ", GetSamplerTypeHLSL(psContext,
                         RESOURCE_DIMENSION_BUFFER,
-                        psDecl->asOperands[0].ui32RegisterNumber));
+                        psDecl->asOperands[0].ui32RegisterNumber).c_str());
                     TranslateOperand(&psDecl->asOperands[0], TO_FLAG_NONE);
                     bcatcstr(glsl, ";\n");
                     break;
@@ -3495,20 +3381,24 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
         }
         case OPCODE_DCL_SAMPLER:
         {
-            if (psContext->IsVulkan())
-            {
-                ResourceBinding *pRes = NULL;
-                psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber, (const ResourceBinding **)&pRes);
-                ASSERT(pRes != NULL);
-                std::string name = ResourceNameHLSL(psContext, RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber, 0);
-                const char *samplerPrecision = GetSamplerPrecision(psContext, pRes->ePrecision);
+            ResourceBinding* pRes = NULL;
+            psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber, (const ResourceBinding**)&pRes);
+            ASSERT(pRes != NULL);
+            std::string name = ResourceNameHLSL(psContext, RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber);
+            if (knownGlobals.find(name.substr(7)) != knownGlobals.end())
+                break;
 
-                GLSLCrossDependencyData::VulkanResourceBinding binding = psContext->psDependencies->GetVulkanResourceBinding(name);
-                const char *samplerType = psDecl->value.eSamplerMode == D3D10_SB_SAMPLER_MODE_COMPARISON ? "samplerShadow" : "sampler";
-                bformata(glsl, "layout(set = %d, binding = %d) uniform %s %s %s;\n", binding.set, binding.binding, samplerPrecision, samplerType, name.c_str());
-                // Store the sampler mode to ShaderInfo, it's needed when we use the sampler
-                pRes->m_SamplerMode = psDecl->value.eSamplerMode;
-            }
+            const char* samplerPrecision = GetSamplerPrecision(psContext, pRes->ePrecision); // Unused for now
+
+            const char* samplerType = psDecl->value.eSamplerMode == D3D10_SB_SAMPLER_MODE_COMPARISON ? "SampleComparisonState" : "SamplerState";
+
+            bformata(glsl, "#ifndef %s_DEFINED\n", name.c_str());
+            bformata(glsl, "#define %s_DEFINED\n", name.c_str());
+            bformata(glsl, "%s %s;\n", samplerType, name.c_str());
+            bformata(glsl, "#endif\n", name.c_str());
+
+            // Store the sampler mode to ShaderInfo, it's needed when we use the sampler
+            pRes->m_SamplerMode = psDecl->value.eSamplerMode;
             break;
         }
         case OPCODE_DCL_HS_MAX_TESSFACTOR:
@@ -3576,7 +3466,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 {
                     if (isVulkan)
                     {
-                        std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                        std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber);
                         GLSLCrossDependencyData::VulkanResourceBinding binding = psContext->psDependencies->GetVulkanResourceBinding(name);
                         bformata(glsl, "layout(set = %d, binding = %d, ", binding.set, binding.binding);
                     }
@@ -3590,19 +3480,19 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                     if (psDecl->sUAV.Type == RETURN_TYPE_FLOAT && numComponents == 3 && precision == REFLECT_RESOURCE_PRECISION_LOWP)
                     {
                         if (IsESLanguage(psContext->psShader->eTargetLanguage))
-                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                         bcatcstr(glsl, "r11f_g11f_b10f) mediump ");
                     }
                     else if (psDecl->sUAV.Type == RETURN_TYPE_UNORM && numComponents == 4 && precision == REFLECT_RESOURCE_PRECISION_LOWP)
                     {
                         if (IsESLanguage(psContext->psShader->eTargetLanguage))
-                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                         bcatcstr(glsl, "rgb10_a2) mediump ");
                     }
                     else if (psDecl->sUAV.Type == RETURN_TYPE_UINT && numComponents == 4 && precision == REFLECT_RESOURCE_PRECISION_LOWP)
                     {
                         if (IsESLanguage(psContext->psShader->eTargetLanguage))
-                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                         bcatcstr(glsl, "rgb10_a2ui) mediump ");
                     }
                     else
@@ -3623,11 +3513,11 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                                     case REFLECT_RESOURCE_PRECISION_LOWP:
                                     case REFLECT_RESOURCE_PRECISION_MEDIUMP:
                                         if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4)
-                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                         bcatcstr(glsl, "16f) mediump "); break;
                                     default:
                                         if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4 && numComponents != 1)
-                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                         bcatcstr(glsl, "32f) highp "); break;
                                 }
                             } break;
@@ -3635,7 +3525,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                             case RETURN_TYPE_SNORM:
                             {
                                 if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4)
-                                    GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                    GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                 bformata(glsl, "8%s) lowp ", psDecl->sUAV.Type == RETURN_TYPE_SNORM ? "_snorm" : "");
                             } break;
                             case RETURN_TYPE_UINT:
@@ -3646,15 +3536,15 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                                 {
                                     case REFLECT_RESOURCE_PRECISION_LOWP:
                                         if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4)
-                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                         bformata(glsl, "8%s) lowp ", fmt); break;
                                     case REFLECT_RESOURCE_PRECISION_MEDIUMP:
                                         if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4)
-                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                         bformata(glsl, "16%s) mediump ", fmt); break;
                                     default:
                                         if (IsESLanguage(psContext->psShader->eTargetLanguage) && numComponents != 4 && numComponents != 1)
-                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                                         bformata(glsl, "32%s) highp ", fmt); break;
                                 }
                             } break;
@@ -3679,7 +3569,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                     {
                         psContext->RequireExtension("GL_EXT_texture_buffer");
                         if (numComponents != 1 || precision == REFLECT_RESOURCE_PRECISION_LOWP || precision == REFLECT_RESOURCE_PRECISION_MEDIUMP)
-                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                            GenerateUnsupportedFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
                     }
 
                     bformata(glsl, "uniform %simageBuffer ", imageTypePrefix);
@@ -3746,7 +3636,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             if (IsESLanguage(psContext->psShader->eTargetLanguage) && accessFlags == (HLSLccReflection::ReadAccess | HLSLccReflection::WriteAccess))
             {
                 if (numComponents != 1 || precision == REFLECT_RESOURCE_PRECISION_LOWP || precision == REFLECT_RESOURCE_PRECISION_MEDIUMP)
-                    GenerateUnsupportedReadWriteFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0).c_str());
+                    GenerateUnsupportedReadWriteFormatWarning(psContext->m_Reflection, ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber).c_str());
             }
 
             psContext->m_Reflection.OnStorageImage(bindpoint, accessFlags);
@@ -3761,7 +3651,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             {
                 if (isVulkan)
                 {
-                    std::string uavname = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                    std::string uavname = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber);
                     GLSLCrossDependencyData::VulkanResourceBinding uavBinding = psContext->psDependencies->GetVulkanResourceBinding(uavname, true);
                     GLSLCrossDependencyData::VulkanResourceBinding counterBinding = { uavBinding.set, uavBinding.binding + 1 };
                     bformata(glsl, "layout(set = %d, binding = %d) buffer %s_counterBuf { highp uint %s_counter; };\n", counterBinding.set, counterBinding.binding, uavname.c_str(), uavname.c_str());
@@ -3776,7 +3666,7 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
                 }
                 else
                 {
-                    std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                    std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber);
                     name += "_counter";
                     bcatcstr(glsl, "layout (binding = 0) uniform ");
 
@@ -3803,14 +3693,14 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             {
                 if (isVulkan)
                 {
-                    std::string uavname = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                    std::string uavname = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber);
                     GLSLCrossDependencyData::VulkanResourceBinding uavBinding = psContext->psDependencies->GetVulkanResourceBinding(uavname, true);
                     GLSLCrossDependencyData::VulkanResourceBinding counterBinding = { uavBinding.set, uavBinding.binding + 1 };
                     bformata(glsl, "layout(set = %d, binding = %d) buffer %s_counterBuf { highp uint %s_counter; };\n", counterBinding.set, counterBinding.binding, uavname.c_str(), uavname.c_str());
                 }
                 else
                 {
-                    std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber, 0);
+                    std::string name = ResourceNameHLSL(psContext, RGROUP_UAV, psDecl->asOperands[0].ui32RegisterNumber);
                     name += "_counter";
                     bcatcstr(glsl, "layout (binding = 0) uniform ");
 

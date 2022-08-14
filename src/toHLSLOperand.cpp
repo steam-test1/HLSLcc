@@ -1290,7 +1290,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
         }
         case OPERAND_TYPE_RESOURCE:
         {
-            ResourceNameHLSL(glsl, psContext, RGROUP_TEXTURE, psOperand->ui32RegisterNumber, 0);
+            ResourceNameHLSL(glsl, psContext, RGROUP_TEXTURE, psOperand->ui32RegisterNumber);
             *pui32IgnoreSwizzle = 1;
             break;
         }
@@ -1453,7 +1453,7 @@ void ToHLSL::TranslateVariableNameWithMask(bstring glsl, const Operand* psOperan
         }
         case OPERAND_TYPE_UNORDERED_ACCESS_VIEW:
         {
-            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psOperand->ui32RegisterNumber, 0);
+            ResourceNameHLSL(glsl, psContext, RGROUP_UAV, psOperand->ui32RegisterNumber);
             break;
         }
         case OPERAND_TYPE_THREAD_GROUP_SHARED_MEMORY:
@@ -1755,18 +1755,13 @@ void ToHLSL::TranslateOperand(bstring glsl, const Operand* psOperand, uint32_t u
     }
 }
 
-std::string ResourceNameHLSL(HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber, const int bZCompare)
+std::string ResourceNameHLSL(HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber)
 {
     std::ostringstream oss;
     const ResourceBinding* psBinding = 0;
     int found;
 
     found = psContext->psShader->sInfo.GetResourceFromBindingPoint(group, ui32RegisterNumber, &psBinding);
-
-    if (bZCompare)
-    {
-        oss << "hlslcc_zcmp";
-    }
 
     if (found)
     {
@@ -1812,14 +1807,14 @@ std::string ResourceNameHLSL(HLSLCrossCompilerContext* psContext, ResourceGroup 
     return res;
 }
 
-void ResourceNameHLSL(bstring targetStr, HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber, const int bZCompare)
+void ResourceNameHLSL(bstring targetStr, HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber)
 {
     bstring glsl = (targetStr == NULL) ? *psContext->currentGLSLString : targetStr;
-    std::string res = ResourceNameHLSL(psContext, group, ui32RegisterNumber, bZCompare);
+    std::string res = ResourceNameHLSL(psContext, group, ui32RegisterNumber);
     bcatcstr(glsl, res.c_str());
 }
 
-std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber, const int bZCompare)
+std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber)
 {
     std::ostringstream oss;
     const ResourceBinding* psTextureBinding = 0;
@@ -1855,28 +1850,24 @@ std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32
         ++i;
     }
 
-    // TODO(pema): Depth-enabled textures need special handling. See HLSLSupport.cginc, specifically UNITY_DECLARE_SHADOWMAP
-    if (bZCompare)
-    {
-        oss << "hlslcc_zcmp";
-    }
-
-
     if (ui32ArrayOffset)
     {
-        oss << texName << ui32ArrayOffset << "TEX_with_SMP" << psSamplerBinding->name;
+        // TODO(pema): Array offset
+        //oss << texName << ui32ArrayOffset << "TEX_with_SMP" << psSamplerBinding->name;
+        oss << texName;
     }
     else
     {
-        oss << texName << "TEX_with_SMP" << psSamplerBinding->name;
+        //oss << texName << "TEX_with_SMP" << psSamplerBinding->name;
+        oss << texName;
     }
 
     return oss.str();
 }
 
-void ConcatTextureSamplerNameHLSL(bstring str, ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber, const int bZCompare)
+void ConcatTextureSamplerNameHLSL(bstring str, ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber)
 {
-    std::string texturesamplername = TextureSamplerNameHLSL(psShaderInfo, ui32TextureRegisterNumber, ui32SamplerRegisterNumber, bZCompare);
+    std::string texturesamplername = TextureSamplerNameHLSL(psShaderInfo, ui32TextureRegisterNumber, ui32SamplerRegisterNumber);
     bcatcstr(str, texturesamplername.c_str());
 }
 

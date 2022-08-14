@@ -580,7 +580,7 @@ void ResolveStructuredBufferBindingSlotsHLSL(ShaderPhase *psPhase, HLSLCrossComp
             uint32_t uav = psPhase->psDecl[p].asOperands[0].ui32RegisterNumber; // uav binding point
 
             bstring BufNamebstr = bfromcstr("");
-            ResourceNameHLSL(BufNamebstr, psContext, RGROUP_UAV, psPhase->psDecl[p].asOperands[0].ui32RegisterNumber, 0);
+            ResourceNameHLSL(BufNamebstr, psContext, RGROUP_UAV, psPhase->psDecl[p].asOperands[0].ui32RegisterNumber);
 
             char *btmp = bstr2cstr(BufNamebstr, '\0');
             std::string BufName = btmp;
@@ -1057,6 +1057,10 @@ bool ToHLSL::Translate()
     }
 
     // Declare structs in scope
+    if (m_StructDefinitions.find(GetOutputStructName()) == m_StructDefinitions.end())
+        m_StructDefinitions[GetOutputStructName()] = StructDefinition();
+    else if (m_StructDefinitions.find(GetInputStructName()) == m_StructDefinitions.end())
+        m_StructDefinitions[GetInputStructName()] = StructDefinition();
     for (auto mem = m_StructDefinitions.begin(); mem != m_StructDefinitions.end(); ++mem)
     {
         if (mem->first == "") // function inputs are skipped
@@ -1076,7 +1080,6 @@ bool ToHLSL::Translate()
         // INFO(SPSI): Inject vertex instance IDs
         if (psShader->eShaderType == VERTEX_SHADER)
         {
-            //mem->second.m_Members.
             if (mem->first == GetOutputStructName())
             {
                 bool skip = std::any_of(mem->second.m_Members.begin(), mem->second.m_Members.end(), [](auto inp) {
@@ -1162,7 +1165,6 @@ bool ToHLSL::Translate()
     std::string stageNameLower = stageName;
     std::transform(stageNameLower.begin(), stageNameLower.end(), stageNameLower.begin(), std::tolower);
     bformata(glsl, "#define STAGE_%s 1\n", stageName);
-    bformata(glsl, "#pragma %s %s\n", stageNameLower.c_str(), entryPointName);
 
     // Entry point
     bformata(glsl, "%s %s(%s_INPUT %s%s)\n{\n", GetOutputStructName().c_str(), entryPointName, stageName, GetInputStructVariableName().c_str(), funInputs.c_str());

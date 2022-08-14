@@ -17,11 +17,11 @@ void TranslateOperandSwizzleHLSL(HLSLCrossCompilerContext* psContext, const Oper
 void TranslateOperandSwizzleWithMaskHLSL(bstring glsl, HLSLCrossCompilerContext* psContext, const Operand* psOperand, uint32_t ui32ComponentMask, int iRebase);
 void TranslateOperandSwizzleWithMaskHLSL(HLSLCrossCompilerContext* psContext, const Operand* psOperand, uint32_t ui32ComponentMask, int iRebase);
 
-void ResourceNameHLSL(bstring targetStr, HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber, const int bZCompare);
-std::string ResourceNameHLSL(HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber, const int bZCompare);
+void ResourceNameHLSL(bstring targetStr, HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber);
+std::string ResourceNameHLSL(HLSLCrossCompilerContext* psContext, ResourceGroup group, const uint32_t ui32RegisterNumber);
 
-std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber, const int bZCompare);
-void ConcatTextureSamplerNameHLSL(bstring str, ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber, const int bZCompare);
+std::string TextureSamplerNameHLSL(ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber);
+void ConcatTextureSamplerNameHLSL(bstring str, ShaderInfo* psShaderInfo, const uint32_t ui32TextureRegisterNumber, const uint32_t ui32SamplerRegisterNumber);
 
 std::string UniformBufferInstanceNameHLSL(HLSLCrossCompilerContext* psContext, const std::string& name);
 
