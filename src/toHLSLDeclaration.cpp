@@ -1110,7 +1110,8 @@ const std::unordered_set<std::string> knownGlobals
     "unity_WorldToShadow", "_LightColor", "unity_LightPosition", "unity_LightAtten",
     "unity_SpotDirection", "unity_LightmapST", "unity_AmbientSky", "unity_AmbientEquator",
     "unity_AmbientGround", "unity_FogColor", "unity_FogParams", "unity_LODFade", "_TextureSampleAdd",
-    "unity_Lightmap_HDR", "unity_DynamicLightmap_HDR"
+    "unity_Lightmap_HDR", "unity_DynamicLightmap_HDR", "_SpecColor", "unity_OneOverOutputBoost",
+    "unity_MaxOutputValue", "unity_UseLinearSpace"
 };
 
 const std::unordered_set<std::string> knownCBuffers
