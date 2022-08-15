@@ -1205,19 +1205,38 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     uint32_t uniqueNameCounter = 0;
 
     SHADER_VARIABLE_TYPE dataType = psContext->psShader->sInfo.GetTextureDataType(psSrcTex->ui32RegisterNumber);
-    psContext->AddIndentation();
-    AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
-
     std::string textureName = TextureSamplerNameHLSL(&psContext->psShader->sInfo, psSrcTex->ui32RegisterNumber, psSrcSamp->ui32RegisterNumber);
     // HACK(pema): Special case for _ShadowMapTexture which uses a combined sampler object
+    // TODO(pema): proj, lod variants
     if (textureName == "_ShadowMapTexture" && funcName == std::string("Sample"))
     {
-        bformata(glsl, "tex2D(%s, ", textureName.c_str());
+        psContext->AddIndentation();
+        bcatcstr(glsl, "#if defined(SHADOWS_SCREEN)\n");
+
+        psContext->AddIndentation();
+        AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
+        bformata(glsl, "SAMPLE_DEPTH_TEXTURE(%s, ", textureName.c_str());
         TranslateTexCoord(eResDim, psDestAddr);
         bcatcstr(glsl, ")");
         AddAssignPrologue(numParenthesis);
+
+        psContext->AddIndentation();
+        bcatcstr(glsl, "#else\n");
+
+        psContext->AddIndentation();
+        AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
+        bformata(glsl, "UNITY_SAMPLE_SHADOW(%s, ", textureName.c_str());
+        TranslateTexCoord(eResDim, psDestAddr);
+        bcatcstr(glsl, ")");
+        AddAssignPrologue(numParenthesis);
+
+        psContext->AddIndentation();
+        bcatcstr(glsl, "#endif\n");
         return;
     }
+
+    psContext->AddIndentation();
+    AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
 
     bcatcstr(glsl, textureName.c_str());
     bformata(glsl, ".%s(", funcName);
