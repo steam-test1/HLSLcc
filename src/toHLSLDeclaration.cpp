@@ -1107,11 +1107,11 @@ const std::unordered_set<std::string> knownGlobals
     "unity_CameraWorldClipPlanes", "_Time", "_SinTime", "_CosTime", "unity_DeltaTime",
     "_LightColor0", "_WorldSpaceLightPos0", "unity_WorldToLight", "unity_4LightPosX0",
     "unity_4LightPosY0", "unity_4LightPosZ0", "unity_4LightAtten0", "unity_LightColor",
-    "unity_WorldToShadow", "_LightColor", "unity_LightPosition", "unity_LightAtten",
+    "unity_WorldToShadow", "unity_LightPosition", "unity_LightAtten", "unity_UseLinearSpace"
     "unity_SpotDirection", "unity_LightmapST", "unity_AmbientSky", "unity_AmbientEquator",
     "unity_AmbientGround", "unity_FogColor", "unity_FogParams", "unity_LODFade", "_TextureSampleAdd",
     "unity_Lightmap_HDR", "unity_DynamicLightmap_HDR", "_SpecColor", "unity_OneOverOutputBoost",
-    "unity_MaxOutputValue", "unity_UseLinearSpace"
+    "unity_MaxOutputValue"
 };
 
 const std::unordered_set<std::string> knownCBuffers
@@ -3386,20 +3386,20 @@ void ToHLSL::TranslateDeclaration(const Declaration* psDecl)
             psContext->psShader->sInfo.GetResourceFromBindingPoint(RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber, (const ResourceBinding**)&pRes);
             ASSERT(pRes != NULL);
             std::string name = ResourceNameHLSL(psContext, RGROUP_SAMPLER, psDecl->asOperands[0].ui32RegisterNumber);
-            if (knownGlobals.find(name.substr(7)) != knownGlobals.end())
-                break;
 
             const char* samplerPrecision = GetSamplerPrecision(psContext, pRes->ePrecision); // Unused for now
-
             const char* samplerType = psDecl->value.eSamplerMode == D3D10_SB_SAMPLER_MODE_COMPARISON ? "SampleComparisonState" : "SamplerState";
-
-            bformata(glsl, "#ifndef %s_DEFINED\n", name.c_str());
-            bformata(glsl, "#define %s_DEFINED\n", name.c_str());
-            bformata(glsl, "%s %s;\n", samplerType, name.c_str());
-            bformata(glsl, "#endif\n", name.c_str());
 
             // Store the sampler mode to ShaderInfo, it's needed when we use the sampler
             pRes->m_SamplerMode = psDecl->value.eSamplerMode;
+
+            if (knownGlobals.find(name.substr(7)) == knownGlobals.end())
+            {
+                bformata(glsl, "#ifndef %s_DEFINED\n", name.c_str());
+                bformata(glsl, "#define %s_DEFINED\n", name.c_str());
+                bformata(glsl, "%s %s;\n", samplerType, name.c_str());
+                bformata(glsl, "#endif\n", name.c_str());
+            }
             break;
         }
         case OPCODE_DCL_HS_MAX_TESSFACTOR:

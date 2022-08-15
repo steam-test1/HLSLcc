@@ -1208,7 +1208,18 @@ void ToHLSL::TranslateTextureSample(Instruction* psInst,
     psContext->AddIndentation();
     AddAssignToDest(psDest, dataType, psSrcTex->GetNumSwizzleElements(), psInst->ui32PreciseMask, &numParenthesis);
 
-    bcatcstr(glsl, TextureSamplerNameHLSL(&psContext->psShader->sInfo, psSrcTex->ui32RegisterNumber, psSrcSamp->ui32RegisterNumber).c_str());
+    std::string textureName = TextureSamplerNameHLSL(&psContext->psShader->sInfo, psSrcTex->ui32RegisterNumber, psSrcSamp->ui32RegisterNumber);
+    // HACK(pema): Special case for _ShadowMapTexture which uses a combined sampler object
+    if (textureName == "_ShadowMapTexture" && funcName == std::string("Sample"))
+    {
+        bformata(glsl, "tex2D(%s, ", textureName.c_str());
+        TranslateTexCoord(eResDim, psDestAddr);
+        bcatcstr(glsl, ")");
+        AddAssignPrologue(numParenthesis);
+        return;
+    }
+
+    bcatcstr(glsl, textureName.c_str());
     bformata(glsl, ".%s(", funcName);
 
     if (pSmpRes)
@@ -4421,7 +4432,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//DERIV_RTX\n");
             }
-            CallHelper1("dFdx", psInst, 0, 1, 1);
+            CallHelper1("ddx", psInst, 0, 1, 1);
             break;
         }
         case OPCODE_DERIV_RTY_COARSE:
@@ -4433,7 +4444,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//DERIV_RTY\n");
             }
-            CallHelper1("dFdy", psInst, 0, 1, 1);
+            CallHelper1("ddy", psInst, 0, 1, 1);
             break;
         }
         case OPCODE_LRP:
@@ -4443,7 +4454,7 @@ void ToHLSL::TranslateInstruction(Instruction* psInst, bool isEmbedded /* = fals
                 psContext->AddIndentation();
                 bcatcstr(glsl, "//LRP\n");
             }
-            CallHelper3("mix", psInst, 0, 2, 3, 1, 1);
+            CallHelper3("lerp", psInst, 0, 2, 3, 1, 1);
             break;
         }
         case OPCODE_DP2ADD:
