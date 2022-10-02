@@ -1,0 +1,29 @@
+name: CI
+
+on:
+  push:
+    branches: master
+  pull_request:
+    branches: master
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: Trass3r/setup-cpp@master
+    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: hendrikmuhs/ccache-action@main
+      with:
+        max-size: 1G
+        verbose: 1
+    - name: build
+      run: |
+        mkdir build && cd build
+        cmake -GNinja -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Release -DHLSLCC_LIBRARY_SHARED=OFF ..
+        ninja
+    - uses: actions/upload-artifact@v3
+      with:
+        name: binaries
+        path: |
+          install/*
