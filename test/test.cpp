@@ -4,8 +4,11 @@
 #include <string>
 #include <iostream>
 
-int main()
+int main(int argc, const char* argv[])
 {
+    if (argc <= 1)
+        return 1;
+
     unsigned int flags = HLSLCC_FLAG_UNIFORM_BUFFER_OBJECT;
 
     GlExtensions ext;
@@ -21,13 +24,11 @@ int main()
 
     // NOTE: Just extracting DXBC isn't enough. We need to fix up RDEF sections of the binary. I re-purposed uTinyRipper for this.
     //   You can use the script found here: https://github.com/pema99/jank-extract-assetbundle-for-hlslcc/blob/main/FixShader/Program.cs
-    int ok = TranslateHLSLFromFile("test/a.dxbc", 0, LANG_HLSL, &ext, nullptr, info, reflection, &shader);
+    int ok = TranslateHLSLFromFile(argv[1], 0, LANG_HLSL, &ext, nullptr, info, reflection, &shader);
 
     if (ok)
     {
-        std::ofstream out("test/out1.hlsl");
-        out << shader.sourceCode;
-        out.close();
+        std::cout << shader.sourceCode;
     }
     else
     {
