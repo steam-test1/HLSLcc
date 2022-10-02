@@ -20,8 +20,9 @@ jobs:
     - name: build
       run: |
         mkdir build && cd build
-        cmake -GNinja -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Release -DHLSLCC_LIBRARY_SHARED=OFF ..
-        ninja
+        cmake -GNinja -DCMAKE_INSTALL_PREFIX=../install -DCMAKE_BUILD_TYPE=Release \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DHLSLCC_LIBRARY_SHARED=OFF ..
+        ninja install
     - uses: actions/upload-artifact@v3
       with:
         name: binaries
