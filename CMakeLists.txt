@@ -57,6 +57,11 @@ set_target_properties(hlslcc PROPERTIES
     "CXX_STANDARD" "11"
     "CXX_STANDARD_REQUIRED" "ON"
     "PUBLIC_HEADERS" "${HLSLCC_HDRS}")
+
+add_executable(HLSLccTest test/test.cpp)
+target_link_libraries(HLSLccTest PUBLIC hlslcc)
+target_include_directories(HLSLccTest PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+
 install(TARGETS hlslcc HLSLccTest
     EXPORT hlslccConfig
     ARCHIVE DESTINATION lib
@@ -66,8 +71,3 @@ install(TARGETS hlslcc HLSLccTest
 install(FILES ${HLSLCC_HDRS} DESTINATION include/hlslcc)
 install(EXPORT hlslccConfig DESTINATION share/hlslcc/cmake)
 export(TARGETS hlslcc FILE hlslccConfig.cmake)
-
-
-add_executable(HLSLccTest test/test.cpp)
-target_link_libraries(HLSLccTest PUBLIC hlslcc)
-target_include_directories(HLSLccTest PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
