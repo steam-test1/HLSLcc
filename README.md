@@ -1,7 +1,5 @@
 # This fork is an attempt to add an HLSL backend to HLSLcc, essentially turning it into a decompiler
 
-# [Quick link to TODO project](https://github.com/users/pema99/projects/1)
-
 # HLSLcc
 DirectX shader bytecode cross compiler.
 
