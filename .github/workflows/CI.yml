@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - uses: Trass3r/setup-cpp@master
     - uses: ilammy/msvc-dev-cmd@v1
     - uses: hendrikmuhs/ccache-action@main
